@@ -33,7 +33,7 @@ def get_movies_route():
 
 
 def get_movie(tx, title):
-    query = "MATCH (m:Movie) WHERE m.title=$title RETURN m"
+    query = "MATCH (m:Movie {title: $title}) RETURN m"
     result = tx.run(query, title=title).data()
 
     if not result:
@@ -73,13 +73,13 @@ def add_movie_route():
 
 
 def update_movie(tx, title, new_title, new_year):
-    query = "MATCH (m:Movie) WHERE m.title=$title RETURN m"
+    query = "MATCH (m:Movie {title: $title}) RETURN m"
     result = tx.run(query, title=title).data()
 
     if not result:
         return None
     else:
-        query = "MATCH (m:Movie) WHERE m.title=$title SET m.title=$new_title, m.released=$new_year"
+        query = "MATCH (m:Movie {title: $title}) SET m.title=$new_title, m.released=$new_year"
         tx.run(query, title=title, new_title=new_title, new_year=new_year)
         return {'title': new_title, 'year': new_year}
 
@@ -101,13 +101,13 @@ def update_movie_route(title):
 
 
 def delete_movie(tx, title):
-    query = "MATCH (m:Movie) WHERE m.title=$title RETURN m"
+    query = "MATCH (m:Movie {title: $title}) RETURN m"
     result = tx.run(query, title=title).data()
 
     if not result:
         return None
     else:
-        query = "MATCH (m:Movie) WHERE m.title=$title DETACH DELETE m"
+        query = "MATCH (m:Movie {title: $title}) DETACH DELETE m"
         tx.run(query, title=title)
         return {'title': title}
 
