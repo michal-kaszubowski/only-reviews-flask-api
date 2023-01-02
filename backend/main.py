@@ -17,9 +17,15 @@ driver.verify_connectivity()
 
 
 def get_movies(tx):
-    query = "MATCH (m:Movie) RETURN m"
+    query = "MATCH (movie:Movie)-[:BELONGS_TO]-(genre:Genre) RETURN movie, genre"
     results = tx.run(query).data()
-    movies = [{'title': result['m']['title'], 'released': result['m']['released']} for result in results]
+    movies = [
+        {
+            'title': result['movie']['title'],
+            'released': result['movie']['released'],
+            'genre': result['genre']['name']
+        } for result in results
+    ]
     return movies
 
 
