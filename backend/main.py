@@ -33,13 +33,17 @@ def get_movies_route():
 
 
 def get_movie(tx, title):
-    query = "MATCH (m:Movie {title: $title}) RETURN m"
+    query = "MATCH (movie:Movie {title: $title})-[:BELONGS_TO]-(genre:Genre) RETURN movie, genre"
     result = tx.run(query, title=title).data()
 
     if not result:
         return None
     else:
-        return {'title': result[0]['m']['title'], 'released': result[0]['m']['released']}
+        return {
+            'title': result[0]['movie']['title'],
+            'released': result[0]['movie']['released'],
+            'genre': result[0]['genre']['name']
+        }
 
 
 @api.route('/movies/<string:title>', methods=['GET'])
