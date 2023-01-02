@@ -56,7 +56,7 @@ def get_movie_route(title):
 
 
 def add_movie(tx, title, year):
-    query = "CREATE (m:Movie {title: $title, released: $released})"
+    query = "CREATE (:Movie {title: $title, released: $released})"
     tx.run(query, title=title, released=year)
 
 
@@ -119,6 +119,113 @@ def delete_movie_route(title):
 
     if not movie:
         response = {'message': 'Movie not found'}
+        return jsonify(response), 404
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
+def get_genres(tx):
+    query = "MATCH (m:Genre) RETURN m"
+    results = tx.run(query).data()
+    movies = [{'name': result['m']['name']} for result in results]
+    return movies
+
+
+@api.route('/genres', methods=['GET'])
+def get_genres_route():
+    with driver.session() as session:
+        genres = session.read_transaction(get_genres)
+
+    response = {'genres': genres}
+    return jsonify(response)
+
+
+def get_genre(tx, name):
+    query = "MATCH (m:Genre {name: $name}) RETURN m"
+    result = tx.run(query, name=name).data()
+
+    if not result:
+        return None
+    else:
+        return {'name': result[0]['m']['name']}
+
+
+@api.route('/genres/<string:name>', methods=['GET'])
+def get_genre_route(name):
+    with driver.session() as session:
+        genre = session.read_transaction(get_genre, name)
+
+    if not genre:
+        response = {'message': 'Genre not found'}
+        return jsonify(response), 404
+    else:
+        response = {'genre': genre}
+        return jsonify(response)
+
+
+def add_genre(tx, name):
+    query = "CREATE (:Genre {name: $name})"
+    tx.run(query, name=name)
+
+
+@api.route('/genres', methods=['POST'])
+def add_genre_route():
+    name = request.json['name']
+
+    with driver.session() as session:
+        session.write_transaction(add_genre, name)
+
+    response = {'status': 'success'}
+    return jsonify(response)
+
+
+def update_genre(tx, name, new_name):
+    query = "MATCH (m:Genre {name: $name}) RETURN m"
+    result = tx.run(query, name=name).data()
+
+    if not result:
+        return None
+    else:
+        query = "MATCH (m:Genre {name: $name}) SET m.name=$new_name"
+        tx.run(query, name=name, new_name=new_name)
+        return {'name': new_name}
+
+
+@api.route('/genres/<string:name>', methods=['PUT'])
+def update_genre_route(name):
+    new_name = request.json['name']
+
+    with driver.session() as session:
+        genre = session.write_transaction(update_genre, name, new_name)
+
+    if not genre:
+        response = {'message': 'Genre not found'}
+        return jsonify(response), 404
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
+def delete_genre(tx, name):
+    query = "MATCH (m:Genre {name: $name}) RETURN m"
+    result = tx.run(query, name=name).data()
+
+    if not result:
+        return None
+    else:
+        query = "MATCH (m:Genre {name: $name}) DETACH DELETE m"
+        tx.run(query, name=name)
+        return {'name': name}
+
+
+@api.route('/genres/<string:name>', methods=['DELETE'])
+def delete_genre_route(name):
+    with driver.session() as session:
+        movie = session.write_transaction(delete_genre, name)
+
+    if not movie:
+        response = {'message': 'Genre not found'}
         return jsonify(response), 404
     else:
         response = {'status': 'success'}
