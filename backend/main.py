@@ -55,18 +55,29 @@ def get_movie_route(title):
         return jsonify(response)
 
 
-def add_movie(tx, title, year):
-    query = "CREATE (:Movie {title: $title, released: $released})"
-    tx.run(query, title=title, released=year)
+def add_movie(tx, title, year, genre):
+    query = "MATCH (m:Genre {name: $name}) RETURN m"
+    result = tx.run(query, name=genre).data()
+
+    if not result:
+        return None
+    else:
+        query = """
+            MATCH (g:Genre {name: $name})
+            CREATE (:Movie {title: $title, released: $released})-[:BELONGS_TO]->(g)
+        """
+        tx.run(query, name=genre, title=title, released=year)
+        return {'title': title, 'released': year, 'genre': genre}
 
 
 @api.route('/movies', methods=['POST'])
 def add_movie_route():
     title = request.json['title']
     year = request.json['released']
+    genre = request.json['genre']
 
     with driver.session() as session:
-        session.write_transaction(add_movie, title, year)
+        session.write_transaction(add_movie, title, year, genre)
 
     response = {'status': 'success'}
     return jsonify(response)
