@@ -93,28 +93,38 @@ def add_movie_route():
     return jsonify(response)
 
 
-def update_movie(tx, title, new_title, new_year):
-    query = "MATCH (m:Movie {title: $title}) RETURN m"
-    result = tx.run(query, title=title).data()
+def update_movie(tx, title, new_title, new_year, new_genre):
+    query_movie = "MATCH (m:Movie {title: $title}) RETURN m"
+    result_movie = tx.run(query_movie, title=title).data()
+    query_genre = "MATCH (m:Genre {name: $name}) RETURN m"
+    result_genre = tx.run(query_genre, name=new_genre).data()
 
-    if not result:
-        return None
+    if result_movie or result_genre:
+        query = """
+            MATCH (movie:Movie {title: $title})-[oldRel:BELONGS_TO]-(:Genre)
+            DELETE oldRel
+            SET movie.title=$new_title, movie.released=$new_year
+            WITH movie
+            MATCH (genre:Genre {name: $new_genre})
+            CREATE (movie)-[:BELONGS_TO]->(genre)
+        """
+        tx.run(query, title=title, new_title=new_title, new_year=new_year, new_genre=new_genre)
+        return {'title': new_title, 'year': new_year, 'genre': new_genre}
     else:
-        query = "MATCH (m:Movie {title: $title}) SET m.title=$new_title, m.released=$new_year"
-        tx.run(query, title=title, new_title=new_title, new_year=new_year)
-        return {'title': new_title, 'year': new_year}
+        return None
 
 
 @api.route('/movies/<string:title>', methods=['PUT'])
 def update_movie_route(title):
     new_title = request.json['title']
     new_year = request.json['released']
+    new_genre = request.json['genre']
 
     with driver.session() as session:
-        movie = session.write_transaction(update_movie, title, new_title, new_year)
+        movie = session.write_transaction(update_movie, title, new_title, new_year, new_genre)
 
     if not movie:
-        response = {'message': 'Movie not found'}
+        response = {'message': 'Movie or Genre not found'}
         return jsonify(response), 404
     else:
         response = {'status': 'success'}
