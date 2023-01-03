@@ -68,18 +68,22 @@ def get_movie_route(title):
 
 
 def add_movie(tx, title, year, photo, genre):
-    query = "MATCH (m:Genre {name: $name}) RETURN m"
-    result = tx.run(query, name=genre).data()
+    query = "CREATE (:Movie {title: $title, released: $released, photo: $photo})"
+    tx.run(query, title=title, released=year, photo=photo)
 
-    if not result:
-        return None
-    else:
-        query = """
-            MATCH (g:Genre {name: $name})
-            CREATE (:Movie {title: $title, released: $released, photo: $photo})-[:BELONGS_TO]->(g)
-        """
-        tx.run(query, name=genre, title=title, released=year, photo=photo)
-        return {'title': title, 'released': year, 'photo': photo, 'genre': genre}
+    for each in genre:
+        query = "MATCH (m:Genre {name: $name}) RETURN m"
+        result = tx.run(query, name=each).data()
+        if not result:
+            return None
+        else:
+            query = """
+                MATCH (movie:Movie {title: $title}), (genre:Genre {name: $name})
+                CREATE (movie)-[:BELONGS_TO]->(genre)
+            """
+            tx.run(query, title=title, name=each)
+
+    return {'title': title, 'released': year, 'photo': photo, 'genre': genre}
 
 
 @api.route('/movies', methods=['POST'])
