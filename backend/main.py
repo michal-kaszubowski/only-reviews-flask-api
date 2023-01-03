@@ -23,6 +23,7 @@ def get_movies(tx):
         {
             'title': result['movie']['title'],
             'released': result['movie']['released'],
+            'photo': result['movie']['photo'],
             'genre': result['genre']['name']
         } for result in results
     ]
@@ -48,6 +49,7 @@ def get_movie(tx, title):
         return {
             'title': result[0]['movie']['title'],
             'released': result[0]['movie']['released'],
+            'photo': result[0]['movie']['photo'],
             'genre': result[0]['genre']['name']
         }
 
@@ -65,7 +67,7 @@ def get_movie_route(title):
         return jsonify(response)
 
 
-def add_movie(tx, title, year, genre):
+def add_movie(tx, title, year, photo, genre):
     query = "MATCH (m:Genre {name: $name}) RETURN m"
     result = tx.run(query, name=genre).data()
 
@@ -74,26 +76,27 @@ def add_movie(tx, title, year, genre):
     else:
         query = """
             MATCH (g:Genre {name: $name})
-            CREATE (:Movie {title: $title, released: $released})-[:BELONGS_TO]->(g)
+            CREATE (:Movie {title: $title, released: $released, photo: $photo})-[:BELONGS_TO]->(g)
         """
-        tx.run(query, name=genre, title=title, released=year)
-        return {'title': title, 'released': year, 'genre': genre}
+        tx.run(query, name=genre, title=title, released=year, photo=photo)
+        return {'title': title, 'released': year, 'photo': photo, 'genre': genre}
 
 
 @api.route('/movies', methods=['POST'])
 def add_movie_route():
     title = request.json['title']
     year = request.json['released']
+    photo = request.json['photo']
     genre = request.json['genre']
 
     with driver.session() as session:
-        session.write_transaction(add_movie, title, year, genre)
+        session.write_transaction(add_movie, title, year, photo, genre)
 
     response = {'status': 'success'}
     return jsonify(response)
 
 
-def update_movie(tx, title, new_title, new_year, new_genre):
+def update_movie(tx, title, new_title, new_year, new_photo, new_genre):
     query_movie = "MATCH (m:Movie {title: $title}) RETURN m"
     result_movie = tx.run(query_movie, title=title).data()
     query_genre = "MATCH (m:Genre {name: $name}) RETURN m"
@@ -103,13 +106,13 @@ def update_movie(tx, title, new_title, new_year, new_genre):
         query = """
             MATCH (movie:Movie {title: $title})-[oldRel:BELONGS_TO]-(:Genre)
             DELETE oldRel
-            SET movie.title=$new_title, movie.released=$new_year
+            SET movie.title=$new_title, movie.released=$new_year, movie.photo=$new_photo
             WITH movie
             MATCH (genre:Genre {name: $new_genre})
             CREATE (movie)-[:BELONGS_TO]->(genre)
         """
-        tx.run(query, title=title, new_title=new_title, new_year=new_year, new_genre=new_genre)
-        return {'title': new_title, 'year': new_year, 'genre': new_genre}
+        tx.run(query, title=title, new_title=new_title, new_year=new_year, new_photo=new_photo, new_genre=new_genre)
+        return {'title': new_title, 'year': new_year, 'photo': new_photo, 'genre': new_genre}
     else:
         return None
 
@@ -118,10 +121,11 @@ def update_movie(tx, title, new_title, new_year, new_genre):
 def update_movie_route(title):
     new_title = request.json['title']
     new_year = request.json['released']
+    new_photo = request.json['photo']
     new_genre = request.json['genre']
 
     with driver.session() as session:
-        movie = session.write_transaction(update_movie, title, new_title, new_year, new_genre)
+        movie = session.write_transaction(update_movie, title, new_title, new_year, new_photo, new_genre)
 
     if not movie:
         response = {'message': 'Movie or Genre not found'}
