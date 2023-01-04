@@ -279,6 +279,35 @@ def delete_genre_route(name):
         return jsonify(response)
 
 
+def get_shows(tx):
+    query = "MATCH (show:Show)-[:BELONGS_TO]-(genre:Genre) RETURN show, genre"
+    results = tx.run(query).data()
+
+    tmp0 = results.pop(0)
+    tmp1 = tmp0['show']
+    tmp1['genre'] = [tmp0['genre']['name']]
+    acc = [tmp1]
+
+    for each in results:
+        if acc[0]['title'] == each['show']['title']:
+            acc[0]['genre'].append(each['genre']['name'])
+        else:
+            tmp = each['show']
+            tmp['genre'] = [each['genre']['name']]
+            acc.insert(0, tmp)
+
+    return acc
+
+
+@api.route('/shows', methods=['GET'])
+def get_shows_route():
+    with driver.session() as session:
+        shows = session.read_transaction(get_shows)
+
+    response = {'shows': shows}
+    return jsonify(response)
+
+
 def add_show(tx, title, released, ended, episodes, photo, genre):
     query = "CREATE (:Show {title: $title, released: $released, ended: $ended, episodes: $episodes, photo: $photo})"
     tx.run(query, title=title, released=released, ended=ended, episodes=episodes, photo=photo)
