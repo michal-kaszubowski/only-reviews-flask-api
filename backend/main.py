@@ -19,15 +19,21 @@ driver.verify_connectivity()
 def get_movies(tx):
     query = "MATCH (movie:Movie)-[:BELONGS_TO]-(genre:Genre) RETURN movie, genre"
     results = tx.run(query).data()
-    movies = [
-        {
-            'title': result['movie']['title'],
-            'released': result['movie']['released'],
-            'photo': result['movie']['photo'],
-            'genre': result['genre']['name']
-        } for result in results
-    ]
-    return movies
+
+    tmp0 = results.pop(0)
+    tmp1 = tmp0['movie']
+    tmp1['genre'] = [tmp0['genre']['name']]
+    acc = [tmp1]
+
+    for each in results:
+        if acc[0]['title'] == each['movie']['title']:
+            acc[0]['genre'].append(each['genre']['name'])
+        else:
+            tmp = each['movie']
+            tmp['genre'] = [each['genre']['name']]
+            acc.insert(0, tmp)
+
+    return acc
 
 
 @api.route('/movies', methods=['GET'])
