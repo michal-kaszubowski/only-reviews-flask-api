@@ -101,21 +101,29 @@ def add_movie_route():
 
 
 def update_movie(tx, title, new_title, new_year, new_photo, new_genre):
-    query_movie = "MATCH (m:Movie {title: $title}) RETURN m"
-    result_movie = tx.run(query_movie, title=title).data()
-    query_genre = "MATCH (m:Genre {name: $name}) RETURN m"
-    result_genre = tx.run(query_genre, name=new_genre).data()
+    locate_movie = "MATCH (m:Movie {title: $title}) RETURN m"
+    locate_movie_result = tx.run(locate_movie, title=title).data()
 
-    if result_movie or result_genre:
+    if locate_movie_result:
         query = """
-            MATCH (movie:Movie {title: $title})-[oldRel:BELONGS_TO]-(:Genre)
-            DELETE oldRel
+            MATCH (movie:Movie {title: $title})-[rel:BELONGS_TO]-(:Genre)
+            DELETE rel
             SET movie.title=$new_title, movie.released=$new_year, movie.photo=$new_photo
-            WITH movie
-            MATCH (genre:Genre {name: $new_genre})
-            CREATE (movie)-[:BELONGS_TO]->(genre)
         """
-        tx.run(query, title=title, new_title=new_title, new_year=new_year, new_photo=new_photo, new_genre=new_genre)
+        tx.run(query, title=title, new_title=new_title, new_year=new_year, new_photo=new_photo)
+
+        for each in new_genre:
+            locate_genre = "MATCH (m:Genre {name: $name}) RETURN m"
+            locate_genre_result = tx.run(locate_genre, name=each).data()
+            if not locate_genre_result:
+                return None
+            else:
+                query = """
+                    MATCH (movie:Movie {title: $title}), (genre:Genre {name: $name})
+                    CREATE (movie)-[:BELONGS_TO]->(genre)
+                """
+                tx.run(query, title=title, name=each)
+
         return {'title': new_title, 'year': new_year, 'photo': new_photo, 'genre': new_genre}
     else:
         return None
