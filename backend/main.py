@@ -279,5 +279,40 @@ def delete_genre_route(name):
         return jsonify(response)
 
 
+def add_show(tx, title, released, ended, episodes, photo, genre):
+    query = "CREATE (:Show {title: $title, released: $released, ended: $ended, episodes: $episodes, photo: $photo})"
+    tx.run(query, title=title, released=released, ended=ended, episodes=episodes, photo=photo)
+
+    for each in genre:
+        locate_genre = "MATCH (m:Genre {name: $name}) RETURN m"
+        locate_genre_result = tx.run(locate_genre, name=each).data()
+        if not locate_genre_result:
+            return None
+        else:
+            query = """
+                MATCH (show:Show {title: $title}), (genre:Genre {name: $name})
+                CREATE (show)-[:BELONGS_TO]->(genre)
+            """
+            tx.run(query, title=title, name=each)
+
+    return {'title': title, 'released': released, 'ended': ended, 'episodes': episodes, 'photo': photo, 'genre': genre}
+
+
+@api.route('/shows', methods=['POST'])
+def add_show_route():
+    title = request.json['title']
+    released = request.json['released']
+    ended = request.json['ended']
+    episodes = request.json['episodes']
+    photo = request.json['photo']
+    genre = request.json['genre']
+
+    with driver.session() as session:
+        session.write_transaction(add_show, title, released, ended, episodes, photo, genre)
+
+    response = {'status': 'success'}
+    return jsonify(response)
+
+
 if __name__ == '__main__':
     api.run()
