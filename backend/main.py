@@ -52,12 +52,20 @@ def get_movie(tx, title):
     if not result:
         return None
     else:
-        return {
-            'title': result[0]['movie']['title'],
-            'released': result[0]['movie']['released'],
-            'photo': result[0]['movie']['photo'],
-            'genre': result[0]['genre']['name']
-        }
+        tmp0 = result.pop(0)
+        tmp1 = tmp0['movie']
+        tmp1['genre'] = [tmp0['genre']['name']]
+        acc = [tmp1]
+
+        for each in result:
+            if acc[0]['title'] == each['movie']['title']:
+                acc[0]['genre'].append(each['genre']['name'])
+            else:
+                tmp = each['movie']
+                tmp['genre'] = [each['genre']['name']]
+                acc.insert(0, tmp)
+
+        return acc
 
 
 @api.route('/movies/<string:title>', methods=['GET'])
@@ -312,6 +320,42 @@ def get_shows_route():
 
     response = {'shows': shows}
     return jsonify(response)
+
+
+def get_show(tx, title):
+    query = "MATCH (show:Show {title: $title})-[:BELONGS_TO]-(genre:Genre) RETURN show, genre"
+    result = tx.run(query, title=title).data()
+
+    if not result:
+        return None
+    else:
+        tmp0 = result.pop(0)
+        tmp1 = tmp0['show']
+        tmp1['genre'] = [tmp0['genre']['name']]
+        acc = [tmp1]
+
+        for each in result:
+            if acc[0]['title'] == each['show']['title']:
+                acc[0]['genre'].append(each['genre']['name'])
+            else:
+                tmp = each['show']
+                tmp['genre'] = [each['genre']['name']]
+                acc.insert(0, tmp)
+
+        return acc
+
+
+@api.route('/shows/<string:title>', methods=['GET'])
+def get_show_route(title):
+    with driver.session() as session:
+        show = session.read_transaction(get_show, title)
+
+    if not show:
+        response = {'message': 'Show not found'}
+        return jsonify(response), 404
+    else:
+        response = {'show': show}
+        return jsonify(response)
 
 
 def add_show(tx, title, released, ended, episodes, photo, genre):
