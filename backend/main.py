@@ -434,5 +434,30 @@ def update_show_route(title):
         return jsonify(response)
 
 
+def delete_show(tx, title):
+    query = "MATCH (m:Show {title: $title}) RETURN m"
+    result = tx.run(query, title=title).data()
+
+    if not result:
+        return None
+    else:
+        query = "MATCH (m:Show {title: $title}) DETACH DELETE m"
+        tx.run(query, title=title)
+        return {'title': title}
+
+
+@api.route('/shows/<string:title>', methods=['DELETE'])
+def delete_show_route(title):
+    with driver.session() as session:
+        show = session.write_transaction(delete_show, title)
+
+    if not show:
+        response = {'message': 'Show not found'}
+        return jsonify(response), 404
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
 if __name__ == '__main__':
     api.run()
