@@ -466,5 +466,37 @@ def delete_show_route(title):
         return jsonify(response)
 
 
+def add_actor(tx, name, born, played):
+    query = "CREATE (:Actor {name: $name, born: $born})"
+    tx.run(query, name=name, born=born)
+
+    for each in played:
+        query = "MATCH (m {title: $title}) RETURN m"
+        result = tx.run(query, title=each).data()
+        if not result:
+            return None
+        else:
+            query = """
+                MATCH (person:Actor {name: $name}), (m {title: $title})
+                CREATE (person)-[:PLAYED]->(m)
+            """
+            tx.run(query, name=name, title=each)
+
+    return {'name': name, 'born': born, 'played': played}
+
+
+@api.route('/actors', methods=['POST'])
+def add_actor_route():
+    name = request.json['name']
+    born = request.json['born']
+    played = request.json['played']
+
+    with driver.session() as session:
+        session.write_transaction(add_actor, name, born, played)
+
+    response = {'status': 'success'}
+    return jsonify(response)
+
+
 if __name__ == '__main__':
     api.run()
