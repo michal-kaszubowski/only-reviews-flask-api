@@ -36,7 +36,10 @@ def reduce_genres(results, type_reduce):
 def get_movies(tx):
     query = "MATCH (movie:Movie)-[:BELONGS_TO]-(genre:Genre) RETURN movie, genre"
     results = tx.run(query).data()
-    return reduce_genres(results, 'movie')
+    if not results:
+        return None
+    else:
+        return reduce_genres(results, 'movie')
 
 
 @api.route('/movies', methods=['GET'])
@@ -284,9 +287,13 @@ def delete_genre_route(name):
 
 
 def get_shows(tx):
+    # error when empty!!!
     query = "MATCH (show:Show)-[:BELONGS_TO]-(genre:Genre) RETURN show, genre"
     results = tx.run(query).data()
-    return reduce_genres(results, 'show')
+    if not results:
+        return None
+    else:
+        return reduce_genres(results, 'show')
 
 
 @api.route('/shows', methods=['GET'])
