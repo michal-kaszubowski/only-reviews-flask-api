@@ -16,10 +16,7 @@ api = Flask(__name__)
 driver.verify_connectivity()
 
 
-def get_movies(tx):
-    query = "MATCH (movie:Movie)-[:BELONGS_TO]-(genre:Genre) RETURN movie, genre"
-    results = tx.run(query).data()
-
+def reduce_movie_genres(results):
     tmp0 = results.pop(0)
     tmp1 = tmp0['movie']
     tmp1['genre'] = [tmp0['genre']['name']]
@@ -34,6 +31,29 @@ def get_movies(tx):
             acc.insert(0, tmp)
 
     return acc
+
+
+def reduce_show_genres(results):
+    tmp0 = results.pop(0)
+    tmp1 = tmp0['show']
+    tmp1['genre'] = [tmp0['genre']['name']]
+    acc = [tmp1]
+
+    for each in results:
+        if acc[0]['title'] == each['show']['title']:
+            acc[0]['genre'].append(each['genre']['name'])
+        else:
+            tmp = each['show']
+            tmp['genre'] = [each['genre']['name']]
+            acc.insert(0, tmp)
+
+    return acc
+
+
+def get_movies(tx):
+    query = "MATCH (movie:Movie)-[:BELONGS_TO]-(genre:Genre) RETURN movie, genre"
+    results = tx.run(query).data()
+    return reduce_movie_genres(results)
 
 
 @api.route('/movies', methods=['GET'])
@@ -52,20 +72,7 @@ def get_movie(tx, title):
     if not result:
         return None
     else:
-        tmp0 = result.pop(0)
-        tmp1 = tmp0['movie']
-        tmp1['genre'] = [tmp0['genre']['name']]
-        acc = [tmp1]
-
-        for each in result:
-            if acc[0]['title'] == each['movie']['title']:
-                acc[0]['genre'].append(each['genre']['name'])
-            else:
-                tmp = each['movie']
-                tmp['genre'] = [each['genre']['name']]
-                acc.insert(0, tmp)
-
-        return acc
+        return reduce_movie_genres(result)
 
 
 @api.route('/movies/<string:title>', methods=['GET'])
@@ -296,21 +303,7 @@ def delete_genre_route(name):
 def get_shows(tx):
     query = "MATCH (show:Show)-[:BELONGS_TO]-(genre:Genre) RETURN show, genre"
     results = tx.run(query).data()
-
-    tmp0 = results.pop(0)
-    tmp1 = tmp0['show']
-    tmp1['genre'] = [tmp0['genre']['name']]
-    acc = [tmp1]
-
-    for each in results:
-        if acc[0]['title'] == each['show']['title']:
-            acc[0]['genre'].append(each['genre']['name'])
-        else:
-            tmp = each['show']
-            tmp['genre'] = [each['genre']['name']]
-            acc.insert(0, tmp)
-
-    return acc
+    return reduce_show_genres(results)
 
 
 @api.route('/shows', methods=['GET'])
@@ -329,20 +322,7 @@ def get_show(tx, title):
     if not result:
         return None
     else:
-        tmp0 = result.pop(0)
-        tmp1 = tmp0['show']
-        tmp1['genre'] = [tmp0['genre']['name']]
-        acc = [tmp1]
-
-        for each in result:
-            if acc[0]['title'] == each['show']['title']:
-                acc[0]['genre'].append(each['genre']['name'])
-            else:
-                tmp = each['show']
-                tmp['genre'] = [each['genre']['name']]
-                acc.insert(0, tmp)
-
-        return acc
+        return reduce_show_genres(result)
 
 
 @api.route('/shows/<string:title>', methods=['GET'])
