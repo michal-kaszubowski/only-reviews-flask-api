@@ -356,5 +356,83 @@ def add_show_route():
     return jsonify(response)
 
 
+def update_show(tx, title, new_title, new_released, new_ended, new_episodes, new_photo, new_genre):
+    locate_show = "MATCH (m:Show {title: $title}) RETURN m"
+    locate_show_result = tx.run(locate_show, title=title).data()
+
+    if locate_show_result:
+        query = """
+            MATCH (show:Show {title: $title})-[rel:BELONGS_TO]-(:Genre)
+            DELETE rel
+            SET 
+                show.title=$new_title,
+                show.released=$new_released,
+                show.ended=$new_ended,
+                show.episodes=$new_episodes,
+                show.photo=$new_photo
+        """
+        tx.run(
+            query,
+            title=title,
+            new_title=new_title,
+            new_released=new_released,
+            new_ended=new_ended,
+            new_episodes=new_episodes,
+            new_photo=new_photo
+        )
+
+        for each in new_genre:
+            locate_genre = "MATCH (m:Genre {name: $name}) RETURN m"
+            locate_genre_result = tx.run(locate_genre, name=each).data()
+            if not locate_genre_result:
+                return None
+            else:
+                query = """
+                    MATCH (show:Show {title: $title}), (genre:Genre {name: $name})
+                    CREATE (show)-[:BELONGS_TO]->(genre)
+                """
+                tx.run(query, title=title, name=each)
+
+        return {
+            'title': new_title,
+            'released': new_released,
+            'ended': new_ended,
+            'episodes': new_episodes,
+            'photo': new_photo,
+            'genre': new_genre
+        }
+    else:
+        return None
+
+
+@api.route('/shows/<string:title>', methods=['PUT'])
+def update_show_route(title):
+    new_title = request.json['title']
+    new_released = request.json['released']
+    new_ended = request.json['ended']
+    new_episodes = request.json['episodes']
+    new_photo = request.json['photo']
+    new_genre = request.json['genre']
+
+    with driver.session() as session:
+        show = session.write_transaction(
+            update_show,
+            title,
+            new_title,
+            new_released,
+            new_ended,
+            new_episodes,
+            new_photo,
+            new_genre
+        )
+
+    if not show:
+        response = {'message': 'Show or Genre not found'}
+        return jsonify(response), 404
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
 if __name__ == '__main__':
     api.run()
