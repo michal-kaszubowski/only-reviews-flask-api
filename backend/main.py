@@ -520,5 +520,40 @@ def add_connection_played_route():
     return jsonify(response)
 
 
+def add_connection_directed(tx, name, directed):
+    locate_person = "MATCH (m:Person {name: $name}) RETURN m"
+    locate_person_result = tx.run(locate_person, name=name).data()
+
+    if locate_person_result:
+        for each in directed:
+            locate_title = "MATCH (m {title: $title}) RETURN m"
+            locate_title_result = tx.run(locate_title, title=each).data()
+
+            if not locate_title_result:
+                return None
+            else:
+                query = """
+                    MATCH (person:Person {name: $name}), (m {title: $title})
+                    CREATE (person)-[:DIRECTED]->(m)
+                """
+                tx.run(query, name=name, title=each)
+
+        return {'name': name, 'directed': directed}
+    else:
+        return None
+
+
+@api.route('/persons/directed', methods=['POST'])
+def add_connection_directed_route():
+    name = request.json['name']
+    directed = request.json['directed']
+
+    with driver.session() as session:
+        session.write_transaction(add_connection_directed, name, directed)
+
+    response = {'status': 'success'}
+    return jsonify(response)
+
+
 if __name__ == '__main__':
     api.run()
