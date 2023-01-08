@@ -467,7 +467,7 @@ def delete_show_route(title):
 
 
 def add_person(tx, name, born):
-    query = "CREATE (:Actor {name: $name, born: $born})"
+    query = "CREATE (:Person {name: $name, born: $born})"
     tx.run(query, name=name, born=born)
 
     return {'name': name, 'born': born}
@@ -480,6 +480,41 @@ def add_person_route():
 
     with driver.session() as session:
         session.write_transaction(add_person, name, born)
+
+    response = {'status': 'success'}
+    return jsonify(response)
+
+
+def add_connection_played(tx, name, played):
+    locate_person = "MATCH (m:Person {name: $name}) RETURN m"
+    locate_person_result = tx.run(locate_person, name=name).data()
+
+    if locate_person_result:
+        for each in played:
+            locate_title = "MATCH (m {title: $title}) RETURN m"
+            locate_title_result = tx.run(locate_title, title=each).data()
+
+            if not locate_title_result:
+                return None
+            else:
+                query = """
+                    MATCH (person:Person {name: $name}), (m {title: $title})
+                    CREATE (person)-[:PLAYED]->(m)
+                """
+                tx.run(query, name=name, title=each)
+
+        return {'name': name, 'played': played}
+    else:
+        return None
+
+
+@api.route('/persons/played', methods=['POST'])
+def add_connection_played_route():
+    name = request.json['name']
+    played = request.json['played']
+
+    with driver.session() as session:
+        session.write_transaction(add_connection_played, name, played)
 
     response = {'status': 'success'}
     return jsonify(response)
