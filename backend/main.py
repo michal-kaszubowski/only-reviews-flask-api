@@ -33,6 +33,18 @@ def reduce_genres(results, type_reduce):
     return acc
 
 
+def swap_person(input_array):
+    tmp = input_array['person']
+    if input_array['relation'] == 'DIRECTED':
+        tmp['directed'] = [input_array['title']]
+        tmp['played'] = []
+    else:
+        tmp['directed'] = []
+        tmp['played'] = [(input_array['title'], input_array['role'])]
+
+    return tmp
+
+
 def get_movies(tx):
     query = "MATCH (movie:Movie)-[:BELONGS_TO]-(genre:Genre) RETURN movie, genre"
     results = tx.run(query).data()
@@ -476,31 +488,17 @@ def get_persons(tx):
     if not results:
         return None
     else:
-        tmp0 = results.pop(0)
-        tmp1 = tmp0['person']
-        if tmp0['relation'] == 'DIRECTED':
-            tmp1['directed'] = [tmp0['title']]
-            tmp1['played'] = []
-        else:
-            tmp1['directed'] = []
-            tmp1['played'] = [tmp0['title']]
-        acc = [tmp1]
+        tmp = results.pop(0)
+        acc = [swap_person(tmp)]
 
         for each in results:
             if acc[0]['name'] == each['person']['name']:
                 if each['relation'] == 'DIRECTED':
                     acc[0]['directed'].append(each['title'])
                 else:
-                    acc[0]['played'].append(each['title'])
+                    acc[0]['played'].append((each['title'], each['role']))
             else:
-                tmp = each['person']
-                if each['relation'] == 'DIRECTED':
-                    tmp['directed'] = [each['title']]
-                    tmp['played'] = []
-                else:
-                    tmp['directed'] = []
-                    tmp['played'] = [each['title']]
-                acc.insert(0, tmp)
+                acc.insert(0, swap_person(each))
 
         return acc
 
