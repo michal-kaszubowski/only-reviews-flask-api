@@ -571,18 +571,17 @@ def add_connection_directed(tx, name, directed):
     locate_person_result = tx.run(locate_person, name=name).data()
 
     if locate_person_result:
-        for each in directed:
-            locate_title = "MATCH (m {title: $title}) RETURN m"
-            locate_title_result = tx.run(locate_title, title=each).data()
+        locate_title = "MATCH (m {title: $title}) RETURN m"
+        locate_title_result = tx.run(locate_title, title=directed).data()
 
-            if not locate_title_result:
-                return None
-            else:
-                query = """
-                    MATCH (person:Person {name: $name}), (m {title: $title})
-                    CREATE (person)-[:DIRECTED]->(m)
-                """
-                tx.run(query, name=name, title=each)
+        if not locate_title_result:
+            return None
+        else:
+            query = """
+                MATCH (person:Person {name: $name}), (m {title: $title})
+                CREATE (person)-[:DIRECTED]->(m)
+            """
+            tx.run(query, name=name, title=directed)
 
         return {'name': name, 'directed': directed}
     else:
@@ -592,10 +591,10 @@ def add_connection_directed(tx, name, directed):
 @api.route('/persons/directed', methods=['POST'])
 def add_connection_directed_route():
     name = request.json['name']
-    directed = request.json['directed']
+    title = request.json['title']
 
     with driver.session() as session:
-        session.write_transaction(add_connection_directed, name, directed)
+        session.write_transaction(add_connection_directed, name, title)
 
     response = {'status': 'success'}
     return jsonify(response)
