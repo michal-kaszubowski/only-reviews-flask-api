@@ -466,6 +466,54 @@ def delete_show_route(title):
         return jsonify(response)
 
 
+def get_persons(tx):
+    query = """
+        MATCH (person:Person)-[rel:PLAYED|DIRECTED]-(m)
+        WITH person, TYPE(rel) AS relation, m.title AS title, rel.who AS role
+        RETURN person, relation, title, role
+    """
+    results = tx.run(query).data()
+    if not results:
+        return None
+    else:
+        tmp0 = results.pop(0)
+        tmp1 = tmp0['person']
+        if tmp0['relation'] == 'DIRECTED':
+            tmp1['directed'] = [tmp0['title']]
+            tmp1['played'] = []
+        else:
+            tmp1['directed'] = []
+            tmp1['played'] = [tmp0['title']]
+        acc = [tmp1]
+
+        for each in results:
+            if acc[0]['name'] == each['person']['name']:
+                if each['relation'] == 'DIRECTED':
+                    acc[0]['directed'].append(each['title'])
+                else:
+                    acc[0]['played'].append(each['title'])
+            else:
+                tmp = each['person']
+                if each['relation'] == 'DIRECTED':
+                    tmp['directed'] = [each['title']]
+                    tmp['played'] = []
+                else:
+                    tmp['directed'] = []
+                    tmp['played'] = [each['title']]
+                acc.insert(0, tmp)
+
+        return acc
+
+
+@api.route('/persons', methods=['GET'])
+def get_persons_route():
+    with driver.session() as session:
+        persons = session.read_transaction(get_persons)
+
+    response = {'persons': persons}
+    return jsonify(response)
+
+
 def add_person(tx, name, born):
     query = "CREATE (:Person {name: $name, born: $born})"
     tx.run(query, name=name, born=born)
