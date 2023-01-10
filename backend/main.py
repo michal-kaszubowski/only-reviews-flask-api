@@ -666,5 +666,30 @@ def update_connection_played_route(name, title, role):
         return jsonify(response)
 
 
+def delete_person(tx, name):
+    query = "MATCH (m:Person {name: $name}) RETURN m"
+    result = tx.run(query, name=name).data()
+
+    if not result:
+        return None
+    else:
+        query = "MATCH (m:Person {name: $name}) DETACH DELETE m"
+        tx.run(query, name=name)
+        return {'name': name}
+
+
+@api.route('/persons/<string:name>', methods=['DELETE'])
+def delete_person_route(name):
+    with driver.session() as session:
+        person = session.write_transaction(delete_person, name)
+
+    if not person:
+        response = {'message': 'Person not found'}
+        return jsonify(response), 404
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
 if __name__ == '__main__':
     api.run()
