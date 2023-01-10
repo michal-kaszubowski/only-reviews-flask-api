@@ -691,5 +691,30 @@ def delete_person_route(name):
         return jsonify(response)
 
 
+def delete_connection_directed(tx, name, title):
+    query = "MATCH (:Person {name: $name})-[conn:DIRECTED]-({title: $title}) RETURN conn"
+    result = tx.run(query, name=name, title=title).data()
+
+    if not result:
+        return None
+    else:
+        query = "MATCH (:Person {name: $name})-[conn:DIRECTED]-({title: $title}) DETACH DELETE conn"
+        tx.run(query, name=name, title=title)
+        return {'name': name, 'title': title}
+
+
+@api.route('/persons/directed/<string:name>&<string:title>', methods=['DELETE'])
+def delete_connection_directed_route(name, title):
+    with driver.session() as session:
+        connection = session.write_transaction(delete_connection_directed, name, title)
+
+    if not connection:
+        response = {'message': 'Connection not found'}
+        return jsonify(response), 404
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
 if __name__ == '__main__':
     api.run()
