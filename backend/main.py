@@ -628,5 +628,43 @@ def update_person_route(name):
         return jsonify(response)
 
 
+def update_connection_played(tx, name, title, role, new_title, new_role):
+    locate_connection = "MATCH (:Person {name: $name})-[conn:PLAYED {who: $role}]-({title: $title}) RETURN conn"
+    locate_connection_result = tx.run(locate_connection, name=name, role=role, title=title).data()
+
+    if locate_connection_result:
+        query = """
+            MATCH (person:Person {name: $name})-[conn:PLAYED {who: $role}]-(m {title: $title}), (new {title: $new_title})
+            WITH person, conn, m, new
+            DELETE conn
+            CREATE (person)-[:PLAYED {who: $new_role}]->(new)
+        """
+        tx.run(query, name=name, title=title, role=role, new_title=new_title, new_role=new_role)
+
+        return {
+            'person': name,
+            'title': new_title,
+            'role': new_role
+        }
+    else:
+        return None
+
+
+@api.route('/persons/played/<string:name>&<string:title>&<string:role>', methods=['PUT'])
+def update_connection_played_route(name, title, role):
+    new_title = request.json['title']
+    new_role = request.json['role']
+
+    with driver.session() as session:
+        connection = session.write_transaction(update_connection_played, name, title, role, new_title, new_role)
+
+    if not connection:
+        response = {'message': 'Relation not found'}
+        return jsonify(response), 404
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
 if __name__ == '__main__':
     api.run()
