@@ -698,7 +698,7 @@ def delete_connection_directed(tx, name, title):
     if not result:
         return None
     else:
-        query = "MATCH (:Person {name: $name})-[conn:DIRECTED]-({title: $title}) DETACH DELETE conn"
+        query = "MATCH (:Person {name: $name})-[conn:DIRECTED]-({title: $title}) DELETE conn"
         tx.run(query, name=name, title=title)
         return {'name': name, 'title': title}
 
@@ -707,6 +707,31 @@ def delete_connection_directed(tx, name, title):
 def delete_connection_directed_route(name, title):
     with driver.session() as session:
         connection = session.write_transaction(delete_connection_directed, name, title)
+
+    if not connection:
+        response = {'message': 'Connection not found'}
+        return jsonify(response), 404
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
+def delete_connection_played(tx, name, title, role):
+    query = "MATCH (:Person {name: $name})-[conn:PLAYED {who: $role}]-({title: $title}) RETURN conn"
+    result = tx.run(query, name=name, role=role, title=title).data()
+
+    if not result:
+        return None
+    else:
+        query = "MATCH (:Person {name: $name})-[conn:PLAYED {who: $role}]-({title: $title}) DELETE conn"
+        tx.run(query, name=name, role=role, title=title)
+        return {'name': name, 'title': title, 'role': role}
+
+
+@api.route('/persons/played/<string:name>&<string:title>&<string:role>', methods=['DELETE'])
+def delete_connection_played_route(name, title, role):
+    with driver.session() as session:
+        connection = session.write_transaction(delete_connection_played, name, title, role)
 
     if not connection:
         response = {'message': 'Connection not found'}
