@@ -741,5 +741,29 @@ def delete_connection_played_route(name, title, role):
         return jsonify(response)
 
 
+def add_user(tx, nick, e_mail, password, registered, photo):
+    query = """
+        CREATE (:User {nick: $nick, e_mail: $e_mail, password: $password, registered: $registered, photo: $photo})
+    """
+    tx.run(query, nick=nick, e_mail=e_mail, password=password, registered=registered, photo=photo)
+
+    return {'nick': nick, 'e_mail': e_mail, 'registered': registered, 'photo': photo}
+
+
+@api.route('/users', methods=['POST'])
+def add_user_route():
+    nick = request.json['nick']
+    e_mail = request.json['e_mail']
+    password = request.json['password']
+    registered = request.json['registered']
+    photo = request.json['photo']
+
+    with driver.session() as session:
+        session.write_transaction(add_user, nick, e_mail, password, registered, photo)
+
+    response = {'status': 'success'}
+    return jsonify(response)
+
+
 if __name__ == '__main__':
     api.run()
