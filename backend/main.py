@@ -600,5 +600,33 @@ def add_connection_directed_route():
     return jsonify(response)
 
 
+def update_person(tx, name, new_name, new_year):
+    query = "MATCH (m:Person {name: $name}) RETURN m"
+    result = tx.run(query, name=name).data()
+
+    if not result:
+        return None
+    else:
+        query = "MATCH (m:Person {name: $name}) SET m.name=$new_name, m.born=$new_year"
+        tx.run(query, name=name, new_name=new_name, new_year=new_year)
+        return {'name': new_name, 'born': new_year}
+
+
+@api.route('/persons/<string:name>', methods=['PUT'])
+def update_person_route(name):
+    new_name = request.json['name']
+    new_year = request.json['born']
+
+    with driver.session() as session:
+        person = session.write_transaction(update_person, name, new_name, new_year)
+
+    if not person:
+        response = {'message': 'Person not found'}
+        return jsonify(response), 404
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
 if __name__ == '__main__':
     api.run()
