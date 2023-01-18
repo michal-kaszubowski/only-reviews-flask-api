@@ -315,7 +315,7 @@ def get_show_info(tx, title):
     locate_title = """
         MATCH (show:Show {title: $title})-[:BELONGS]-(genre:Genre)
         OPTIONAL MATCH (show)-[:DIRECTED]-(director:Person)
-        OPTIONAL MATCH (show)-[:PLAYED]-(actor:Person)
+        OPTIONAL MATCH (show)-[played:PLAYED]-(actor:Person)
         OPTIONAL MATCH (show)-[:LIKES]-(user:User)
         OPTIONAL MATCH (show)-[:ABOUT]-(review:Review)
         WITH show,
@@ -323,10 +323,11 @@ def get_show_info(tx, title):
             ID(show) AS id,
             director.name AS name,
             director.surname AS surname,
+            collect(played.role) AS roles,
             collect(actor) AS cast,
             count(user) AS likes,
             collect(review) AS reviews
-        RETURN show, genre, id, name, surname, cast, likes, reviews
+        RETURN show, genre, id, name, surname, roles, cast, likes, reviews
     """
     locate_title_result = tx.run(locate_title, title=title).data()
 
@@ -343,7 +344,11 @@ def get_show_info(tx, title):
                 'name': locate_title_result[0]['name'],
                 'surname': locate_title_result[0]['surname']
             },
-            'cast': [{'name': actor['name'], 'surname': actor['surname']} for actor in locate_title_result[0]['cast']],
+            'cast': [{
+                'name': locate_title_result[0]['cast'][i]['name'],
+                'surname': locate_title_result[0]['cast'][i]['surname'],
+                'as': locate_title_result[0]['roles'][i]
+            } for i in range(0, len(locate_title_result[0]['cast']))],
             'likes': locate_title_result[0]['likes'],
             'reviews': locate_title_result[0]['reviews']
         }
@@ -495,11 +500,85 @@ def delete_show(tx, title):
 
 @api.route('/admin/shows/<string:title>', methods=['DELETE'])
 def delete_show_route(title):
+    """
+    http DELETE http://127.0.0.1:5000/admin/shows/<string:title>
+    :param title: string
+    :return: {}
+    """
     with driver.session() as session:
         show = session.write_transaction(delete_show, title)
 
     if not show:
         response = {'message': 'Show not found!'}
+        return jsonify(response)
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
+# /admin/connection/played----------------------------------------------------------------------------------------------
+
+
+def add_connection_played(tx, person_id, role, show_title):
+    locate_person = "MATCH (person:Person) WHERE ID(person) = $person_id RETURN person"
+    locate_person_result = tx.run(locate_person, person_id=person_id).data()
+
+    locate_title = "MATCH (show:Show {title: $title}) RETURN show"
+    locate_title_result = tx.run(locate_title, title=show_title).data()
+
+    if locate_person_result and locate_title_result:
+        create_connection = """
+            MATCH (person:Person) WHERE ID(person) = $person_id
+            MATCH (show:Show {title: $title})
+            CREATE (person)-[:PLAYED {role: $role}]->(show)
+        """
+        tx.run(create_connection, person_id=person_id, role=role, title=show_title)
+        return {'person': person_id, 'role': role, 'show': show_title}
+
+
+@api.route('/admin/connection/played', methods=['POST'])
+def add_connection_route():
+    """
+    http POST http://127.0.0.1:5000/admin/connection/played/ person_id=00 role="role" title="title"
+    :return: {}
+    """
+    person_id = int(request.json['person_id'])
+    role = request.json['role']
+    show_title = request.json['title']
+
+    with driver.session() as session:
+        connection = session.write_transaction(add_connection_played, person_id, role, show_title)
+
+    if not connection:
+        response = {'message': 'Invalid arguments!'}
+        return jsonify(response)
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
+def delete_connection_played(tx, the_id):
+    locate_connection = "MATCH (:Show)-[conn:PLAYED]-(:Person) WHERE ID(conn) = $the_id RETURN conn"
+    locate_connection_result = tx.run(locate_connection, the_id=the_id).data()
+
+    if locate_connection_result:
+        delete_connection = "MATCH (:Show)-[conn:PLAYED]-(:Person) WHERE ID(conn) = $the_id DELETE conn"
+        tx.run(delete_connection, the_id=the_id)
+        return {'id': the_id}
+
+
+@api.route('/admin/connection/played/<int:the_id>', methods=['DELETE'])
+def delete_connection_played_route(the_id):
+    """
+    http DELETE http://127.0.0.1:5000/admin/connection/played/<int:the_id>
+    :param the_id: int
+    :return: {}
+    """
+    with driver.session() as session:
+        connection = session.write_transaction(delete_connection_played, the_id)
+
+    if not connection:
+        response = {'message': 'Connection not found!'}
         return jsonify(response)
     else:
         response = {'status': 'success'}
