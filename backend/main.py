@@ -519,6 +519,29 @@ def delete_show_route(title):
 # /admin/connection/played----------------------------------------------------------------------------------------------
 
 
+def get_connections_played(tx):
+    locate_connection = """
+        MATCH (person:Person)-[conn:PLAYED]-(show:Show)
+        WITH person.name AS name, person.surname AS surname, conn.role AS role, ID(conn) AS id, show.title AS title
+        RETURN name, surname, role, id, title
+    """
+    locate_connection_result = tx.run(locate_connection).data()
+    return locate_connection_result
+
+
+@api.route('/admin/connection/played', methods=['GET'])
+def get_connections_played_route():
+    """
+    http GET http://127.0.0.1:5000/admin/connection/played
+    :return: {}
+    """
+    with driver.session() as session:
+        connections = session.read_transaction(get_connections_played)
+
+    response = {'connections': connections}
+    return jsonify(response)
+
+
 def add_connection_played(tx, person_id, role, title):
     locate_person = "MATCH (person:Person) WHERE ID(person) = $person_id RETURN person"
     locate_person_result = tx.run(locate_person, person_id=person_id).data()
@@ -586,6 +609,29 @@ def delete_connection_played_route(the_id):
 
 
 # /admin/connection/directed--------------------------------------------------------------------------------------------
+
+
+def get_connections_directed(tx):
+    locate_connection = """
+        MATCH (person:Person)-[conn:DIRECTED]-(show:Show)
+        WITH person.name AS name, person.surname AS surname, ID(conn) AS id, show.title AS title
+        RETURN name, surname, id, title
+    """
+    locate_connection_result = tx.run(locate_connection).data()
+    return locate_connection_result
+
+
+@api.route('/admin/connection/directed', methods=['GET'])
+def get_connections_directed_route():
+    """
+    http GET http://127.0.0.1:5000/admin/connection/directed
+    :return: {}
+    """
+    with driver.session() as session:
+        connections = session.read_transaction(get_connections_directed)
+
+    response = {'connections': connections}
+    return jsonify(response)
 
 
 def add_connection_directed(tx, person_id, title):
