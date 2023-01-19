@@ -519,12 +519,12 @@ def delete_show_route(title):
 # /admin/connection/played----------------------------------------------------------------------------------------------
 
 
-def add_connection_played(tx, person_id, role, show_title):
+def add_connection_played(tx, person_id, role, title):
     locate_person = "MATCH (person:Person) WHERE ID(person) = $person_id RETURN person"
     locate_person_result = tx.run(locate_person, person_id=person_id).data()
 
     locate_title = "MATCH (show:Show {title: $title}) RETURN show"
-    locate_title_result = tx.run(locate_title, title=show_title).data()
+    locate_title_result = tx.run(locate_title, title=title).data()
 
     if locate_person_result and locate_title_result:
         create_connection = """
@@ -532,8 +532,8 @@ def add_connection_played(tx, person_id, role, show_title):
             MATCH (show:Show {title: $title})
             CREATE (person)-[:PLAYED {role: $role}]->(show)
         """
-        tx.run(create_connection, person_id=person_id, role=role, title=show_title)
-        return {'person': person_id, 'role': role, 'show': show_title}
+        tx.run(create_connection, person_id=person_id, role=role, title=title)
+        return {'person': person_id, 'role': role, 'show': title}
 
 
 @api.route('/admin/connection/played', methods=['POST'])
@@ -576,6 +576,76 @@ def delete_connection_played_route(the_id):
     """
     with driver.session() as session:
         connection = session.write_transaction(delete_connection_played, the_id)
+
+    if not connection:
+        response = {'message': 'Connection not found!'}
+        return jsonify(response)
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
+# /admin/connection/directed--------------------------------------------------------------------------------------------
+
+
+def add_connection_directed(tx, person_id, title):
+    locate_connection = """
+        MATCH (person:Person)-[conn:DIRECTED]-(:Show {title: $title})
+        WHERE ID(person) = $person_id
+        RETURN conn
+    """
+    locate_connection_result = tx.run(locate_connection, title=title, person_id=person_id).data()
+
+    if not locate_connection_result:
+        create_connection = """
+            MATCH (person:Person)
+            WHERE ID(person) = $person_id
+            MATCH (show:Show {title: $title})
+            CREATE (person)-[:DIRECTED]->(show)
+        """
+        tx.run(create_connection, person_id=person_id, title=title)
+        return {'person': person_id, 'show': title}
+
+
+@api.route('/admin/connection/directed', methods=['POST'])
+def add_connection_directed_route():
+    """
+    http POST http://127.0.0.1:5000/admin/connection/directed person_id=00 title="title"
+    :return: {}
+    """
+    person_id = int(request.json['person_id'])
+    show_title = request.json['title']
+
+    with driver.session() as session:
+        connection = session.write_transaction(add_connection_directed, person_id, show_title)
+
+    if not connection:
+        response = {'message': 'Invalid arguments!'}
+        return jsonify(response)
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
+def delete_connection_directed(tx, the_id):
+    locate_connection = "MATCH ()-[conn:DIRECTED]-() WHERE ID(conn) = $the_id RETURN conn"
+    locate_connection_result = tx.run(locate_connection, the_id=the_id).data()
+
+    if locate_connection_result:
+        delete_connection = "MATCH ()-[conn:DIRECTED]-() WHERE ID(conn) = $the_id DELETE conn"
+        tx.run(delete_connection, the_id=the_id)
+        return {'id': the_id}
+
+
+@api.route('/admin/connection/directed/<int:the_id>', methods=['DELETE'])
+def delete_connection_directed_route(the_id):
+    """
+    http DELETE http://127.0.0.1:5000/admin/connection/directed/<int:the_id>
+    :param the_id: int
+    :return: {}
+    """
+    with driver.session() as session:
+        connection = session.write_transaction(delete_connection_directed, the_id)
 
     if not connection:
         response = {'message': 'Connection not found!'}
