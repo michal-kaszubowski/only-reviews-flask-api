@@ -516,6 +516,198 @@ def delete_show_route(title):
         return jsonify(response)
 
 
+# /users----------------------------------------------------------------------------------------------------------------
+
+
+def get_users(tx):
+    locate_user = """
+        MATCH (user:User)
+        WITH user.nick AS nick, user.e_mail AS e_mail, user.photo AS photo 
+        RETURN nick, e_mail, photo
+    """
+    locate_user_result = tx.run(locate_user).data()
+    return locate_user_result
+
+
+@api.route('/users', methods=['GET'])
+def get_users_route():
+    """
+    http GET http://127.0.0.1:5000/users
+    :return: {}
+    """
+    with driver.session() as session:
+        users = session.read_transaction(get_users)
+
+    response = {'users': users}
+    return jsonify(response)
+
+
+def get_user_info(tx, nick):
+    locate_user = """
+        MATCH (user:User {nick: $nick})
+        OPTIONAL MATCH (user)-[:SEEN]-(seen:Show)
+        OPTIONAL MATCH (user)-[:LIKES]-(liked:Show)
+        OPTIONAL MATCH (user)-[:WANTS_TO_WATCH]-(to_watch:Show)
+        OPTIONAL MATCH (user)-[:WROTE]-(review:Review)
+        WITH user,
+            ID(user) AS id,
+            collect(seen.title) AS seen_shows,
+            collect(liked.title) AS favourite,
+            collect(to_watch.title) AS watchlist,
+            collect(review) AS reviews
+        RETURN user, id, seen_shows, favourite, watchlist, reviews
+    """
+    locate_user_result = tx.run(locate_user, nick=nick).data()
+
+    if locate_user_result:
+        user = {
+            'nick': locate_user_result[0]['user']['nick'],
+            'e_mail': locate_user_result[0]['user']['e_mail'],
+            'registered': locate_user_result[0]['user']['registered'],
+            'photo': locate_user_result[0]['user']['photo'],
+            'id': locate_user_result[0]['id'],
+            'seen_shows': locate_user_result[0]['seen_shows'],
+            'favourite': locate_user_result[0]['favourite'],
+            'watchlist': locate_user_result[0]['watchlist'],
+            'reviews': locate_user_result[0]['reviews']
+        }
+        return user
+
+
+@api.route('/users/<string:nick>', methods=['GET'])
+def get_user_info_route(nick):
+    """
+    http GET http://127.0.0.1:5000/users/<string:nick>
+    :param nick: string
+    :return: {}
+    """
+    with driver.session() as session:
+        user = session.read_transaction(get_user_info, nick)
+
+    if not user:
+        response = {'message': 'User not found!'}
+        return jsonify(response)
+    else:
+        response = {'user': user}
+        return jsonify(response)
+
+
+# /admin/users----------------------------------------------------------------------------------------------------------
+
+
+def add_user(tx, nick, e_mail, password, registered, photo):
+    locate_user = "MATCH (user:User {nick: $nick}) RETURN user"
+    locate_user_result = tx.run(locate_user, nick=nick).data()
+
+    if not locate_user_result:
+        create_user = """
+            CREATE (:User {nick: $nick, e_mail: $e_mail, password: $password, registered: $registered, photo: $photo})
+        """
+        tx.run(create_user, nick=nick, e_mail=e_mail, password=password, registered=registered, photo=photo)
+        return {'user': nick}
+
+
+@api.route('/admin/users', methods=['POST'])
+def add_user_route():
+    """
+    http POST http://127.0.0.1:5000/admin/users nick="nick" e_mail="e_mail" password="password" registered="01/12/2000"
+    photo="photoURL"
+    :return:
+    """
+    nick = request.json['nick']
+    e_mail = request.json['e_mail']
+    password = request.json['password']
+    registered = request.json['registered']
+    photo = request.json['photo']
+
+    with driver.session() as session:
+        user = session.write_transaction(add_user, nick, e_mail, password, registered, photo)
+
+    if not user:
+        response = {'message': 'User already exists in database!'}
+        return jsonify(response)
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
+def put_user_info(tx, the_id, nick, e_mail, password, registered, photo):
+    locate_user = "MATCH (user:User) WHERE ID(user) = $the_id RETURN user"
+    locate_user_result = tx.run(locate_user, the_id=the_id).data()
+
+    if locate_user_result:
+        update_user = """
+            MATCH (user:User) WHERE ID(user) = $the_id
+            SET user.nick = $nick,
+                user.e_mail = $e_mail,
+                user.password = $password,
+                user.registered = $registered,
+                user.photo = $photo
+        """
+        tx.run(update_user,
+               the_id=the_id,
+               nick=nick,
+               e_mail=e_mail,
+               password=password,
+               registered=registered,
+               photo=photo
+               )
+        return {'user': nick, 'e_mail': e_mail, 'registered': registered, 'photo': photo}
+
+
+@api.route('/admin/users/<int:the_id>', methods=['PUT'])
+def put_user_info_route(the_id):
+    """
+    http PUT http://127.0.0.1:5000/admin/users/<int:the_id> nick="nick" e_mail="e_mail" password="password"
+    registered="01/12/2000" photo="photoURL"
+    :param the_id: int
+    :return: {}
+    """
+    nick = request.json['nick']
+    e_mail = request.json['e_mail']
+    password = request.json['password']
+    registered = request.json['registered']
+    photo = request.json['photo']
+
+    with driver.session() as session:
+        user = session.write_transaction(put_user_info, the_id, nick, e_mail, password, registered, photo)
+
+    if not user:
+        response = {'message': 'User not found!'}
+        return jsonify(response)
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
+def delete_user(tx, the_id):
+    locate_user = "MATCH (user:User) WHERE ID(user) = $the_id RETURN user"
+    locate_user_result = tx.run(locate_user, the_id=the_id).data()
+
+    if locate_user_result:
+        remove_user = "MATCH (user:User) WHERE ID(user) = $the_id DETACH DELETE user"
+        tx.run(remove_user, the_id=the_id)
+        return {'id': the_id}
+
+
+@api.route('/admin/users/<int:the_id>', methods=['DELETE'])
+def delete_user_route(the_id):
+    """
+    http DELETE http://127.0.0.1:5000/admin/users/<int:the_id>
+    :param the_id: int
+    :return: {}
+    """
+    with driver.session() as session:
+        user = session.write_transaction(delete_user, the_id)
+
+    if not user:
+        response = {'message': 'User not found!'}
+        return jsonify(response)
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
 # /admin/connection/played----------------------------------------------------------------------------------------------
 
 
