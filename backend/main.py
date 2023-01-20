@@ -798,6 +798,7 @@ def delete_connection_seen_route(the_id):
         response = {'status': 'success'}
         return jsonify(response)
 
+
 # /connections/likes----------------------------------------------------------------------------------------------------
 
 
@@ -880,6 +881,97 @@ def delete_connection_likes_route(the_id):
     """
     with driver.session() as session:
         connection = session.write_transaction(delete_connection_likes, the_id)
+
+    if not connection:
+        response = {'message': 'Connection not found!'}
+        return jsonify(response)
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
+# /connection/wants_to_watch--------------------------------------------------------------------------------------------
+
+
+def get_connections_wants_to_watch(tx):
+    locate_connection = """
+        MATCH (user:User)-[conn:WANTS_TO_WATCH]-(show:Show)
+        WITH user.nick AS nick, ID(conn) AS id, show.title AS title
+        RETURN nick, id, title
+    """
+    locate_connection_result = tx.run(locate_connection).data()
+    return locate_connection_result
+
+
+@api.route('/connection/wants_to_watch', methods=['GET'])
+def get_connections_wants_to_watch_route():
+    """
+    http GET http://127.0.0.1:5000/connection/wants_to_watch
+    :return: {}
+    """
+    with driver.session() as session:
+        connections = session.read_transaction(get_connections_wants_to_watch)
+
+    response = {'connections': connections}
+    return jsonify(response)
+
+
+def add_connection_wants_to_watch(tx, the_id, title):
+    locate_user = "MATCH (user:User) WHERE ID(user) = $the_id RETURN user"
+    locate_user_result = tx.run(locate_user, the_id=the_id).data()
+
+    locate_title = "MATCH (show:Show {title: $title}) RETURN show"
+    locate_title_result = tx.run(locate_title, title=title).data()
+
+    if locate_user_result and locate_title_result:
+        create_connection = """
+            MATCH (user:User) WHERE ID(user) = $the_id
+            MATCH (show:Show {title: $title})
+            CREATE (user)-[:WANTS_TO_WATCH]->(show)
+        """
+        tx.run(create_connection, the_id=the_id, title=title)
+        return {'id': the_id, 'title': title}
+
+
+@api.route('/connection/wants_to_watch/<int:the_id>', methods=['POST'])
+def add_connection_wants_to_watch_route(the_id):
+    """
+    http POST http://127.0.0.1:5000/connection/wants_to_watch/<int:the_id> title="title"
+    :param the_id: int
+    :return: {}
+    """
+    title = request.json['title']
+
+    with driver.session() as session:
+        connection = session.write_transaction(add_connection_wants_to_watch, the_id, title)
+
+    if not connection:
+        response = {'message': 'Invalid arguments!'}
+        return jsonify(response)
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
+def delete_connection_wants_to_watch(tx, the_id):
+    locate_connection = "MATCH (:User)-[conn:WANTS_TO_WATCH]-(:Show) WHERE ID(conn) = $the_id RETURN conn"
+    locate_connection_result = tx.run(locate_connection, the_id=the_id).data()
+
+    if locate_connection_result:
+        delete_connection = "MATCH (:User)-[conn:WANTS_TO_WATCH]-(:Show) WHERE ID(conn) = $the_id DELETE conn"
+        tx.run(delete_connection, the_id=the_id)
+        return {'id': the_id}
+
+
+@api.route('/connection/wants_to_watch/<int:the_id>', methods=['DELETE'])
+def delete_connection_wants_to_watch_route(the_id):
+    """
+    http DELETE http://127.0.0.1:5000/connection/wants_to_watch/<int:the_id>
+    :param the_id: int
+    :return: {}
+    """
+    with driver.session() as session:
+        connection = session.write_transaction(delete_connection_wants_to_watch, the_id)
 
     if not connection:
         response = {'message': 'Connection not found!'}
