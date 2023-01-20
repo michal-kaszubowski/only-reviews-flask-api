@@ -708,6 +708,97 @@ def delete_user_route(the_id):
         return jsonify(response)
 
 
+# /connection/seen------------------------------------------------------------------------------------------------------
+
+
+def get_connections_seen(tx):
+    locate_connection = """
+        MATCH (user:User)-[:SEEN]-(show:Show)
+        WITH user.nick AS nick, ID(user) AS id, show.title AS title
+        RETURN nick, id, title
+    """
+    locate_connection_result = tx.run(locate_connection).data()
+    return locate_connection_result
+
+
+@api.route('/connection/seen', methods=['GET'])
+def get_connections_seen_route():
+    """
+    http GET http://127.0.0.1:5000/connection/seen
+    :return: {}
+    """
+    with driver.session() as session:
+        connections = session.read_transaction(get_connections_seen)
+
+    response = {'connections': connections}
+    return response
+
+
+def add_connection_seen(tx, the_id, title):
+    locate_user = "MATCH (user:User) WHERE ID(user) = $the_id RETURN user"
+    locate_user_result = tx.run(locate_user, the_id=the_id).data()
+
+    locate_title = "MATCH (show:Show {title: $title}) RETURN show"
+    locate_title_result = tx.run(locate_title, title=title).data()
+
+    if locate_user_result and locate_title_result:
+        create_connection = """
+            MATCH (user:User) WHERE ID(user) = $the_id
+            MATCH (show:Show {title: $title})
+            CREATE (user)-[:SEEN]->(show)
+        """
+        tx.run(create_connection, the_id=the_id, title=title)
+        return {'id': the_id, 'title': title}
+
+
+@api.route('/connection/seen/<int:the_id>', methods=['POST'])
+def add_connection_seen_route(the_id):
+    """
+    http POST http://127.0.0.1:5000/connection/seen/<int:the_id> title="title"
+    :param the_id: int
+    :return: {}
+    """
+    title = request.json['title']
+
+    with driver.session() as session:
+        connection = session.write_transaction(add_connection_seen, the_id, title)
+
+    if not connection:
+        response = {'message': 'Invalid arguments!'}
+        return jsonify(response)
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
+def delete_connection_seen(tx, the_id):
+    locate_connection = "MATCH (:User)-[conn:SEEN]-(:Show) WHERE ID(conn) = $the_id RETURN conn"
+    locate_connection_result = tx.run(locate_connection, the_id=the_id).data()
+
+    if locate_connection_result:
+        delete_connection = "MATCH (:User)-[conn:SEEN]-(:Show) WHERE ID(conn) = $the_id DELETE conn"
+        tx.run(delete_connection, the_id=the_id)
+        return {'id': the_id}
+
+
+@api.route('/connection/seen/<int:the_id>', methods=['DELETE'])
+def delete_connection_seen_route(the_id):
+    """
+    http DELETE http://127.0.0.1:5000/connection/seen/<int:the_id>
+    :param the_id: int
+    :return: {}
+    """
+    with driver.session() as session:
+        connection = session.write_transaction(delete_connection_seen, the_id)
+
+    if not connection:
+        response = {'message': 'Connection not found!'}
+        return jsonify(response)
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
 # /admin/connection/played----------------------------------------------------------------------------------------------
 
 
