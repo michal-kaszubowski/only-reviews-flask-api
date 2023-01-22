@@ -20,10 +20,17 @@ driver.verify_connectivity()
 
 
 def get_genres(tx):
-    locate_genre = "MATCH (genre:Genre) RETURN genre"
+    locate_genre = """
+        MATCH (genre:Genre)
+        WITH *, ID(genre) AS id
+        RETURN genre, id
+    """
     locate_genre_result = tx.run(locate_genre).data()
 
-    genres = [result['genre']['name'] for result in locate_genre_result]
+    genres = [{
+        'name': result['genre']['name'],
+        'id': result['id']
+    } for result in locate_genre_result]
     return genres
 
 
@@ -72,25 +79,25 @@ def add_genre_route():
         return jsonify(response)
 
 
-def delete_genre(tx, name):
-    locate_genre = "MATCH (genre:Genre {name: $name}) RETURN genre"
-    locate_genre_result = tx.run(locate_genre, name=name).data()
+def delete_genre(tx, the_id):
+    locate_genre = "MATCH (genre:Genre) WHERE ID(genre) = $the_id RETURN genre"
+    locate_genre_result = tx.run(locate_genre, the_id=the_id).data()
 
     if locate_genre_result:
-        remove_genre = "MATCH (genre:Genre {name: $name}) DETACH DELETE genre"
-        tx.run(remove_genre, name=name)
-        return {'name': name}
+        remove_genre = "MATCH (genre:Genre) WHERE ID(genre) = $the_id DETACH DELETE genre"
+        tx.run(remove_genre, the_id=the_id)
+        return {'id': the_id}
 
 
-@api.route('/admin/genres/<string:name>', methods=['DELETE'])
-def delete_genre_route(name):
+@api.route('/admin/genres/<int:the_id>', methods=['DELETE'])
+def delete_genre_route(the_id):
     """
-    http DELETE http://127.0.0.1:5000/admin/genres/<string:name>
-    :param name: string
+    http DELETE http://127.0.0.1:5000/admin/genres/<int:the_id>
+    :param the_id: int
     :return: {}
     """
     with driver.session() as session:
-        genre = session.write_transaction(delete_genre, name)
+        genre = session.write_transaction(delete_genre, the_id)
 
     if not genre:
         response = {'message': 'Genre not found!'}
@@ -284,7 +291,11 @@ def delete_person_route(the_id):
 
 
 def get_shows(tx):
-    locate_title = "MATCH (show:Show)-[:BELONGS]-(genre:Genre) RETURN show, genre"
+    locate_title = """
+        MATCH (show:Show)-[:BELONGS]-(genre:Genre)
+        WITH *, ID(show) AS id
+        RETURN show, genre, id
+    """
     locate_title_result = tx.run(locate_title).data()
 
     shows = [{
@@ -293,7 +304,8 @@ def get_shows(tx):
         'photo': result['show']['photo'],
         'episodes': result['show']['episodes'],
         'released': result['show']['released'],
-        'ended': result['show']['ended']
+        'ended': result['show']['ended'],
+        'id': result['id']
     } for result in locate_title_result]
     return shows
 
@@ -311,9 +323,10 @@ def get_shows_route():
     return jsonify(response)
 
 
-def get_show_info(tx, title):
+def get_show_info(tx, the_id):
     locate_title = """
-        MATCH (show:Show {title: $title})-[:BELONGS]-(genre:Genre)
+        MATCH (show:Show)-[:BELONGS]-(genre:Genre)
+        WHERE ID(show) = $the_id
         OPTIONAL MATCH (show)-[:DIRECTED]-(director:Person)
         OPTIONAL MATCH (show)-[played:PLAYED]-(actor:Person)
         OPTIONAL MATCH (show)-[:LIKES]-(user:User)
@@ -329,7 +342,7 @@ def get_show_info(tx, title):
             collect(review) AS reviews
         RETURN show, genre, id, name, surname, roles, cast, likes, reviews
     """
-    locate_title_result = tx.run(locate_title, title=title).data()
+    locate_title_result = tx.run(locate_title, the_id=the_id).data()
 
     if locate_title_result:
         show = {
@@ -355,15 +368,15 @@ def get_show_info(tx, title):
         return show
 
 
-@api.route('/shows/<string:title>', methods=['GET'])
-def get_show_info_route(title):
+@api.route('/shows/<int:the_id>', methods=['GET'])
+def get_show_info_route(the_id):
     """
-    http GET http://127.0.0.1:5000/shows/<string:title>
-    :param title: string
+    http GET http://127.0.0.1:5000/shows/<int:the_id>
+    :param the_id: int
     :return: {}
     """
     with driver.session() as session:
-        show = session.read_transaction(get_show_info, title)
+        show = session.read_transaction(get_show_info, the_id)
 
     if not show:
         response = {'message': 'Show not found!'}
@@ -488,25 +501,25 @@ def put_show_info_route(the_id):
         return jsonify(response)
 
 
-def delete_show(tx, title):
-    locate_title = "MATCH (show:Show {title: $title}) RETURN show"
-    locate_title_result = tx.run(locate_title, title=title).data()
+def delete_show(tx, the_id):
+    locate_title = "MATCH (show:Show) WHERE ID(show) = $the_id RETURN show"
+    locate_title_result = tx.run(locate_title, the_id=the_id).data()
 
     if locate_title_result:
-        remove_show = "MATCH (show:Show {title: $title}) DETACH DELETE show"
-        tx.run(remove_show, title=title)
-        return {'title': title}
+        remove_show = "MATCH (show:Show) WHERE ID(show) = $the_id DETACH DELETE show"
+        tx.run(remove_show, the_id=the_id)
+        return {'id': the_id}
 
 
-@api.route('/admin/shows/<string:title>', methods=['DELETE'])
-def delete_show_route(title):
+@api.route('/admin/shows/<int:the_id>', methods=['DELETE'])
+def delete_show_route(the_id):
     """
     http DELETE http://127.0.0.1:5000/admin/shows/<string:title>
-    :param title: string
+    :param the_id: int
     :return: {}
     """
     with driver.session() as session:
-        show = session.write_transaction(delete_show, title)
+        show = session.write_transaction(delete_show, the_id)
 
     if not show:
         response = {'message': 'Show not found!'}
@@ -522,8 +535,8 @@ def delete_show_route(title):
 def get_users(tx):
     locate_user = """
         MATCH (user:User)
-        WITH user.nick AS nick, user.e_mail AS e_mail, user.photo AS photo 
-        RETURN nick, e_mail, photo
+        WITH ID(user) AS id, user.nick AS nick, user.e_mail AS e_mail, user.photo AS photo 
+        RETURN id, nick, e_mail, photo
     """
     locate_user_result = tx.run(locate_user).data()
     return locate_user_result
@@ -542,9 +555,10 @@ def get_users_route():
     return jsonify(response)
 
 
-def get_user_info(tx, nick):
+def get_user_info(tx, the_id):
     locate_user = """
-        MATCH (user:User {nick: $nick})
+        MATCH (user:User)
+        WHERE ID(user) = $the_id
         OPTIONAL MATCH (user)-[:SEEN]-(seen:Show)
         OPTIONAL MATCH (user)-[:LIKES]-(liked:Show)
         OPTIONAL MATCH (user)-[:WANTS_TO_WATCH]-(to_watch:Show)
@@ -557,7 +571,7 @@ def get_user_info(tx, nick):
             collect(review) AS reviews
         RETURN user, id, seen_shows, favourite, watchlist, reviews
     """
-    locate_user_result = tx.run(locate_user, nick=nick).data()
+    locate_user_result = tx.run(locate_user, the_id=the_id).data()
 
     if locate_user_result:
         user = {
@@ -574,15 +588,15 @@ def get_user_info(tx, nick):
         return user
 
 
-@api.route('/users/<string:nick>', methods=['GET'])
-def get_user_info_route(nick):
+@api.route('/users/<int:the_id>', methods=['GET'])
+def get_user_info_route(the_id):
     """
-    http GET http://127.0.0.1:5000/users/<string:nick>
-    :param nick: string
+    http GET http://127.0.0.1:5000/users/<int:the_id>
+    :param the_id: int
     :return: {}
     """
     with driver.session() as session:
-        user = session.read_transaction(get_user_info, nick)
+        user = session.read_transaction(get_user_info, the_id)
 
     if not user:
         response = {'message': 'User not found!'}
