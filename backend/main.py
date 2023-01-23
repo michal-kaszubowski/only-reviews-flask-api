@@ -293,8 +293,9 @@ def delete_person_route(the_id):
 def get_shows(tx):
     locate_title = """
         MATCH (show:Show)-[:BELONGS]-(genre:Genre)
-        WITH *, ID(show) AS id
-        RETURN show, genre, id
+        OPTIONAL MATCH (show)-[like:LIKES]-(:User)
+        WITH *, ID(show) AS id, count(like) AS score
+        RETURN show, genre, id, score
     """
     locate_title_result = tx.run(locate_title).data()
 
@@ -331,6 +332,7 @@ def get_show_info(tx, the_id):
         OPTIONAL MATCH (show)-[played:PLAYED]-(actor:Person)
         OPTIONAL MATCH (show)-[:LIKES]-(user:User)
         OPTIONAL MATCH (show)-[:ABOUT]-(review:Review)
+        OPTIONAL MATCH (review)-[:WROTE]-(author:User)
         WITH show,
             genre,
             ID(show) AS id,
@@ -338,9 +340,10 @@ def get_show_info(tx, the_id):
             director.surname AS surname,
             collect(played.role) AS roles,
             collect(actor) AS cast,
-            count(user) AS likes,
-            collect(review) AS reviews
-        RETURN show, genre, id, name, surname, roles, cast, likes, reviews
+            count(user) AS score,
+            collect(review) AS reviews,
+            collect(author) AS authors
+        RETURN show, genre, id, name, surname, roles, cast, score, reviews, authors
     """
     locate_title_result = tx.run(locate_title, the_id=the_id).data()
 
@@ -362,8 +365,11 @@ def get_show_info(tx, the_id):
                 'surname': locate_title_result[0]['cast'][i]['surname'],
                 'as': locate_title_result[0]['roles'][i]
             } for i in range(0, len(locate_title_result[0]['cast']))],
-            'likes': locate_title_result[0]['likes'],
-            'reviews': locate_title_result[0]['reviews']
+            'score': locate_title_result[0]['score'],
+            'reviews': [{
+                'author': locate_title_result[0]['authors'][i]['nick'],
+                'body': locate_title_result[0]['reviews'][i]['body']
+            } for i in range(0, len(locate_title_result[0]['reviews']))]
         }
         return show
 
@@ -728,8 +734,9 @@ def delete_user_route(the_id):
 def get_reviews(tx):
     locate_review = """
         MATCH (show:Show)-[:ABOUT]-(review:Review)-[:WROTE]-(user:User)
-        WITH show.title AS title, ID(review) AS id, user.nick AS author
-        RETURN title, id, author
+        OPTIONAL MATCH (review)-[like:LIKES]-(:User)
+        WITH show.title AS title, ID(review) AS id, user.nick AS author, count(like) AS score
+        RETURN title, id, author, score
     """
     locate_review_result = tx.run(locate_review).data()
     return locate_review_result
@@ -752,13 +759,15 @@ def get_review_info(tx, the_id):
     locate_review = """
         MATCH (show:Show)-[:ABOUT]-(review:Review)-[:WROTE]-(user:User)
         WHERE ID(review) = $the_id
+        OPTIONAL MATCH (review)-[like:LIKES]-(:User)
         WITH show.title AS title,
             ID(show) AS show_id,
             review.body AS body,
             ID(review) AS id,
             user.nick AS author,
-            ID(user) AS user_id
-        RETURN title, show_id, body, id, author, user_id
+            ID(user) AS user_id,
+            count(like) AS score
+        RETURN title, show_id, body, id, author, user_id, score
     """
     locate_review_result = tx.run(locate_review, the_id=the_id).data()
     return locate_review_result
