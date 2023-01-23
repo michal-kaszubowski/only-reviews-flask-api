@@ -927,7 +927,7 @@ def add_connection_seen(tx, nick, title):
             CREATE (user)-[:SEEN]->(show)
         """
         tx.run(create_connection, nick=nick, title=title)
-        return {'nick': nick, 'title': title}
+        return {'user': nick, 'title': title}
 
 
 @api.route('/connection/show/seen', methods=['POST'])
@@ -978,7 +978,7 @@ def delete_connection_seen_route(the_id):
         return jsonify(response)
 
 
-# /connections/likes----------------------------------------------------------------------------------------------------
+# /connections/show/likes-----------------------------------------------------------------------------------------------
 
 
 def get_connections_likes(tx):
@@ -991,10 +991,10 @@ def get_connections_likes(tx):
     return locate_connection_result
 
 
-@api.route('/connection/likes', methods=['GET'])
+@api.route('/connection/show/likes', methods=['GET'])
 def get_connections_likes_route():
     """
-    http GET http://127.0.0.1:5000/connection/likes
+    http GET http://127.0.0.1:5000/connection/show/likes
     :return: {}
     """
     with driver.session() as session:
@@ -1004,34 +1004,34 @@ def get_connections_likes_route():
     return jsonify(response)
 
 
-def add_connection_likes(tx, the_id, title):
-    locate_user = "MATCH (user:User) WHERE ID(user) = $the_id RETURN user"
-    locate_user_result = tx.run(locate_user, the_id=the_id).data()
+def add_connection_likes(tx, nick, title):
+    locate_user = "MATCH (user:User {nick: $nick}) RETURN user"
+    locate_user_result = tx.run(locate_user, nick=nick).data()
 
     locate_title = "MATCH (show:Show {title: $title}) RETURN show"
     locate_title_result = tx.run(locate_title, title=title).data()
 
     if locate_user_result and locate_title_result:
         create_connection = """
-            MATCH (user:User) WHERE ID(user) = $the_id
+            MATCH (user:User {nick: $nick})
             MATCH (show:Show {title: $title})
             CREATE (user)-[:LIKES]->(show)
         """
-        tx.run(create_connection, the_id=the_id, title=title)
-        return {'id': the_id, 'title': the_id}
+        tx.run(create_connection, nick=nick, title=title)
+        return {'user': nick, 'title': title}
 
 
-@api.route('/connection/likes/<int:the_id>', methods=['POST'])
-def add_connection_likes_route(the_id):
+@api.route('/connection/show/likes', methods=['POST'])
+def add_connection_likes_route():
     """
-    http POST http://127.0.0.1:5000/connection/likes/<int:the_id> title="title"
-    :param the_id: int
+    http POST http://127.0.0.1:5000/connection/show/likes nick="nick" title="title"
     :return: {}
     """
+    nick = request.json['nick']
     title = request.json['title']
 
     with driver.session() as session:
-        connection = session.write_transaction(add_connection_likes, the_id, title)
+        connection = session.write_transaction(add_connection_likes, nick, title)
 
     if not connection:
         response = {'message': 'Invalid arguments!'}
@@ -1051,10 +1051,10 @@ def delete_connection_likes(tx, the_id):
         return {'id': the_id}
 
 
-@api.route('/connection/likes/<int:the_id>', methods=['DELETE'])
+@api.route('/connection/show/likes/<int:the_id>', methods=['DELETE'])
 def delete_connection_likes_route(the_id):
     """
-    http DELETE http://127.0.0.1:5000/connection/likes/<int:the_id>
+    http DELETE http://127.0.0.1:5000/connection/show/likes/<int:the_id>
     :param the_id: int
     :return: {}
     """
