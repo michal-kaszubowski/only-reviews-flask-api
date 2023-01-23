@@ -722,6 +722,162 @@ def delete_user_route(the_id):
         return jsonify(response)
 
 
+# /reviews--------------------------------------------------------------------------------------------------------------
+
+
+def get_reviews(tx):
+    locate_review = """
+        MATCH (show:Show)-[:ABOUT]-(review:Review)-[:WROTE]-(user:User)
+        WITH show.title AS title, ID(review) AS id, user.nick AS author
+        RETURN title, id, author
+    """
+    locate_review_result = tx.run(locate_review).data()
+    return locate_review_result
+
+
+@api.route('/reviews', methods=['GET'])
+def get_reviews_route():
+    """
+    http GET http://127.0.0.1:5000/reviews
+    :return: {}
+    """
+    with driver.session() as session:
+        reviews = session.read_transaction(get_reviews)
+
+    response = {'reviews': reviews}
+    return jsonify(response)
+
+
+def get_review_info(tx, the_id):
+    locate_review = """
+        MATCH (show:Show)-[:ABOUT]-(review:Review)-[:WROTE]-(user:User)
+        WHERE ID(review) = $the_id
+        WITH show.title AS title,
+            ID(show) AS show_id,
+            review.body AS body,
+            ID(review) AS id,
+            user.nick AS author,
+            ID(user) AS user_id
+        RETURN title, show_id, body, id, author, user_id
+    """
+    locate_review_result = tx.run(locate_review, the_id=the_id).data()
+    return locate_review_result
+
+
+@api.route('/reviews/<int:the_id>', methods=['GET'])
+def get_review_info_route(the_id):
+    """
+    http GET http://127.0.0.1:5000/reviews/<int:the_id>
+    :param the_id: int
+    :return: {}
+    """
+    with driver.session() as session:
+        review = session.read_transaction(get_review_info, the_id)
+
+    response = {'review': review}
+    return jsonify(response)
+
+
+def add_review(tx, the_id, title, body):
+    locate_user = "MATCH (user:User) WHERE ID(user) = $the_id RETURN user"
+    locate_user_result = tx.run(locate_user, the_id=the_id).data()
+
+    locate_title = "MATCH (show:Show {title: $title}) RETURN show"
+    locate_title_result = tx.run(locate_title, title=title).data()
+
+    if locate_user_result and locate_title_result:
+        create_review = """
+            MATCH (user:User) WHERE ID(user) = $the_id
+            MATCH (show:Show {title: $title})
+            CREATE (show)<-[:ABOUT]-(:Review {body: $body})<-[:WROTE]-(user)
+        """
+        tx.run(create_review, the_id=the_id, title=title, body=body)
+        return {'user_id': the_id, 'title': title}
+
+
+@api.route('/reviews/<int:the_id>', methods=['POST'])
+def add_review_route(the_id):
+    """
+    http POST http://127.0.0.1:5000/reviews/<int:the_id> title="title" body="body"
+    :param the_id: int
+    :return: {}
+    """
+    title = request.json['title']
+    body = request.json['body']
+
+    with driver.session() as session:
+        review = session.write_transaction(add_review, the_id, title, body)
+
+    if not review:
+        response = {'message': 'Invalid arguments!'}
+        return jsonify(response)
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
+def put_review_body(tx, the_id, body):
+    locate_review = "MATCH (review:Review) WHERE ID(review) = $the_id RETURN review"
+    locate_review_result = tx.run(locate_review, the_id=the_id).data()
+
+    if locate_review_result:
+        update_review = """
+            MATCH (review:Review)
+            WHERE ID(review) = $the_id
+            SET review.body = $body
+        """
+        tx.run(update_review, the_id=the_id, body=body)
+        return {'id': the_id, 'body': body}
+
+
+@api.route('/reviews/<int:the_id>', methods=['PUT'])
+def put_review_body_route(the_id):
+    """
+    http PUT http://127.0.0.1:5000/reviews/<int:the_id> body="body"
+    :param the_id: int
+    :return: {}
+    """
+    body = request.json['body']
+
+    with driver.session() as session:
+        review = session.write_transaction(put_review_body, the_id, body)
+
+    if not review:
+        response = {'message': 'Invalid arguments!'}
+        return jsonify(response)
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
+def delete_review(tx, the_id):
+    locate_review = "MATCH (review:Review) WHERE ID(review) = $the_id RETURN review"
+    locate_review_result = tx.run(locate_review, the_id=the_id).data()
+
+    if locate_review_result:
+        remove_review = "MATCH (review:Review) WHERE ID(review) = $the_id DETACH DELETE review"
+        tx.run(remove_review, the_id=the_id)
+        return {'id': the_id}
+
+
+@api.route('/reviews/<int:the_id>', methods=['DELETE'])
+def delete_review_route(the_id):
+    """
+    http DELETE http://127.0.0.1:5000/reviews/<int:the_id>
+    :param the_id: int
+    :return: {}
+    """
+    with driver.session() as session:
+        review = session.write_transaction(delete_review, the_id)
+
+    if not review:
+        response = {'message': 'Review not found in database!'}
+        return jsonify(response)
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
 # /connection/seen------------------------------------------------------------------------------------------------------
 
 
