@@ -1349,5 +1349,101 @@ def delete_connection_directed_route(the_id):
         return jsonify(response)
 
 
+# /connection/review/likes----------------------------------------------------------------------------------------------
+
+
+def get_connection_likes_review(tx):
+    locate_connection = """
+        MATCH (user:User)-[conn:LIKES]-(review:Review)-[:ABOUT]-(show:Show)
+        WITH user.nick AS author, ID(conn) AS id, ID(review) AS review_id, show.title AS title
+        RETURN author, id, review_id, title
+    """
+    locate_connection_result = tx.run(locate_connection).data()
+    return locate_connection_result
+
+
+@api.route('/connection/review/likes', methods=['GET'])
+def get_connection_likes_review_route():
+    """
+    http GET http://127.0.0.1:5000/connection/review/likes
+    :return: {}
+    """
+    with driver.session() as session:
+        connections = session.read_transaction(get_connection_likes_review)
+
+    response = {'connections': connections}
+    return jsonify(response)
+
+
+def add_connection_likes_review(tx, nick, review_id):
+    locate_user = "MATCH (user:User {nick: $nick}) RETURN user"
+    locate_user_result = tx.run(locate_user, nick=nick).data()
+
+    locate_review = "MATCH (review:Review) WHERE ID(review) = $review_id RETURN review"
+    locate_review_result = tx.run(locate_review, review_id=review_id).data()
+
+    locate_connection = """
+        MATCH (:User {nick: $nick})-[conn:LIKES]-(review:Review) WHERE ID(review) = $review_id RETURN conn
+    """
+    locate_connection_result = tx.run(locate_connection, nick=nick, review_id=review_id).data()
+
+    if locate_user_result and locate_review_result and not locate_connection_result:
+        create_connection = """
+            MATCH (user:User {nick: $nick})
+            MATCH (review:Review) WHERE ID(review) = $review_id
+            CREATE (user)-[:LIKES]->(review)
+        """
+        tx.run(create_connection, nick=nick, review_id=review_id)
+        return {'user': nick, 'review': review_id}
+
+
+@api.route('/connection/review/likes', methods=['POST'])
+def add_connection_likes_review_route():
+    """
+    http POST http://127.0.0.1:5000/connection/review/likes nick="nick" review_id=11
+    :return: {}
+    """
+    nick = request.json['nick']
+    review_id = int(request.json['review_id'])
+
+    with driver.session() as session:
+        connection = session.write_transaction(add_connection_likes_review, nick, review_id)
+
+    if not connection:
+        response = {'message': 'Invalid arguments!'}
+        return jsonify(response)
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
+def delete_connection_likes_review(tx, the_id):
+    locate_connection = "MATCH (:User)-[conn:LIKES]-(:Review) WHERE ID(conn) = $the_id RETURN conn"
+    locate_connection_result = tx.run(locate_connection, the_id=the_id).data()
+
+    if locate_connection_result:
+        remove_connection = "MATCH (:User)-[conn:LIKES]-(:Review) WHERE ID(conn) = $the_id DELETE conn"
+        tx.run(remove_connection, the_id=the_id)
+        return {'id': the_id}
+
+
+@api.route('/connection/review/likes/<int:the_id>', methods=['DELETE'])
+def delete_connection_likes_review_route(the_id):
+    """
+    http DELETE http://127.0.0.1:5000/connection/review/likes/<int:the_id>
+    :param the_id: int
+    :return: {}
+    """
+    with driver.session() as session:
+        connection = session.write_transaction(delete_connection_likes_review, the_id)
+
+    if not connection:
+        response = {'message': 'Connection not found!'}
+        return jsonify(response)
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
 if __name__ == '__main__':
     api.run()
