@@ -147,7 +147,7 @@ def get_person_info(tx, the_id):
         WHERE ID(person) = $the_id
         OPTIONAL MATCH (person)-[played:PLAYED]-(in:Show)
         OPTIONAL MATCH (person)-[:DIRECTED]-(what:Show)
-        WITH person, collect(played) AS roles, collect(in) AS filmography, collect(what) AS directed
+        WITH person, collect(played.role) AS roles, collect(in.title) AS filmography, collect(what.title) AS directed
         RETURN person, roles, filmography, directed
     """
     locate_person_result = tx.run(locate_person, the_id=the_id).data()
@@ -158,8 +158,12 @@ def get_person_info(tx, the_id):
             'surname': locate_person_result[0]['person']['surname'],
             'born': locate_person_result[0]['person']['born'],
             'photo': locate_person_result[0]['person']['photo'],
-            'roles': locate_person_result[0]['roles'],
-            'filmography': locate_person_result[0]['filmography'],
+            # 'roles': locate_person_result[0]['roles'],
+            # 'filmography': locate_person_result[0]['filmography'],
+            'filmography': [{
+                'role': locate_person_result[0]['roles'][i],
+                'title': locate_person_result[0]['filmography'][i]
+            } for i in range(0, len(locate_person_result[0]['roles']))],
             'directed': locate_person_result[0]['directed']
         }
         return person
@@ -199,7 +203,7 @@ def add_person(tx, name, surname, born, photo):
 @api.route('/admin/persons', methods=['POST'])
 def add_person_route():
     """
-    http POST http://127.0.0.1:5000/admin/persons name="name" surname="surname" born=0000 photo="photoURL"
+    http POST http://127.0.0.1:5000/admin/persons name="name" surname="surname" born=1999 photo="photoURL"
     :return: {}
     """
     name = request.json['name']
@@ -226,7 +230,7 @@ def put_person_info(tx, the_id, name, surname, born, photo):
         update_person = """
             MATCH (person:Person)
             WHERE ID(person) = $the_id
-            SET person.name = $name, person.surname = $surname, person.born = $born, person.phot = $photo
+            SET person.name = $name, person.surname = $surname, person.born = $born, person.photo = $photo
         """
         tx.run(update_person, the_id=the_id, name=name, surname=surname, born=born, photo=photo).data()
         return {'name': name, 'surname': surname, 'born': born, 'photo': photo}
@@ -235,7 +239,7 @@ def put_person_info(tx, the_id, name, surname, born, photo):
 @api.route('/admin/persons/<int:the_id>', methods=['PUT'])
 def put_person_info_route(the_id):
     """
-    http PUT http://127.0.0.1:5000/admin/persons/<int:the_id> name="name" surname="surname" born=0000 photo="photoURL"
+    http PUT http://127.0.0.1:5000/admin/persons/<int:the_id> name="name" surname="surname" born=1999 photo="photoURL"
     :param the_id: int
     :return: {}
     """
@@ -632,7 +636,7 @@ def add_user_route():
     """
     http POST http://127.0.0.1:5000/admin/users nick="nick" e_mail="e_mail" password="password" registered="01/12/2000"
     photo="photoURL"
-    :return:
+    :return: {}
     """
     nick = request.json['nick']
     e_mail = request.json['e_mail']
@@ -787,35 +791,35 @@ def get_review_info_route(the_id):
     return jsonify(response)
 
 
-def add_review(tx, the_id, title, body):
-    locate_user = "MATCH (user:User) WHERE ID(user) = $the_id RETURN user"
-    locate_user_result = tx.run(locate_user, the_id=the_id).data()
+def add_review(tx, nick, title, body):
+    locate_user = "MATCH (user:User {nick: $nick}) RETURN user"
+    locate_user_result = tx.run(locate_user, nick=nick).data()
 
     locate_title = "MATCH (show:Show {title: $title}) RETURN show"
     locate_title_result = tx.run(locate_title, title=title).data()
 
     if locate_user_result and locate_title_result:
         create_review = """
-            MATCH (user:User) WHERE ID(user) = $the_id
+            MATCH (user:User {nick: $nick})
             MATCH (show:Show {title: $title})
             CREATE (show)<-[:ABOUT]-(:Review {body: $body})<-[:WROTE]-(user)
         """
-        tx.run(create_review, the_id=the_id, title=title, body=body)
-        return {'user_id': the_id, 'title': title}
+        tx.run(create_review, nick=nick, title=title, body=body)
+        return {'nick': nick, 'title': title}
 
 
-@api.route('/reviews/<int:the_id>', methods=['POST'])
-def add_review_route(the_id):
+@api.route('/reviews', methods=['POST'])
+def add_review_route():
     """
-    http POST http://127.0.0.1:5000/reviews/<int:the_id> title="title" body="body"
-    :param the_id: int
+    http POST http://127.0.0.1:5000/reviews nick="nick" title="title" body="body"
     :return: {}
     """
+    nick = request.json['nick']
     title = request.json['title']
     body = request.json['body']
 
     with driver.session() as session:
-        review = session.write_transaction(add_review, the_id, title, body)
+        review = session.write_transaction(add_review, nick, title, body)
 
     if not review:
         response = {'message': 'Invalid arguments!'}
@@ -892,8 +896,8 @@ def delete_review_route(the_id):
 
 def get_connections_seen(tx):
     locate_connection = """
-        MATCH (user:User)-[:SEEN]-(show:Show)
-        WITH user.nick AS nick, ID(user) AS id, show.title AS title
+        MATCH (user:User)-[conn:SEEN]-(show:Show)
+        WITH user.nick AS nick, ID(conn) AS id, show.title AS title
         RETURN nick, id, title
     """
     locate_connection_result = tx.run(locate_connection).data()
@@ -933,7 +937,7 @@ def add_connection_seen(tx, nick, title):
 @api.route('/connection/show/seen', methods=['POST'])
 def add_connection_seen_route():
     """
-    http POST http://127.0.0.1:5000/connection/seen nick="nick" title="title"
+    http POST http://127.0.0.1:5000/connection/show/seen nick="nick" title="title"
     :return: {}
     """
     nick = request.json['nick']
@@ -1160,7 +1164,7 @@ def delete_connection_wants_to_watch_route(the_id):
         return jsonify(response)
 
 
-# /admin/connection/played----------------------------------------------------------------------------------------------
+# /admin/connection/show/played-----------------------------------------------------------------------------------------
 
 
 def get_connections_played(tx):
@@ -1173,10 +1177,10 @@ def get_connections_played(tx):
     return locate_connection_result
 
 
-@api.route('/admin/connection/played', methods=['GET'])
+@api.route('/admin/connection/show/played', methods=['GET'])
 def get_connections_played_route():
     """
-    http GET http://127.0.0.1:5000/admin/connection/played
+    http GET http://127.0.0.1:5000/admin/connection/show/played
     :return: {}
     """
     with driver.session() as session:
@@ -1203,10 +1207,10 @@ def add_connection_played(tx, person_id, role, title):
         return {'person': person_id, 'role': role, 'show': title}
 
 
-@api.route('/admin/connection/played', methods=['POST'])
+@api.route('/admin/connection/show/played', methods=['POST'])
 def add_connection_route():
     """
-    http POST http://127.0.0.1:5000/admin/connection/played/ person_id=00 role="role" title="title"
+    http POST http://127.0.0.1:5000/admin/connection/show/played person_id=11 role="role" title="title"
     :return: {}
     """
     person_id = int(request.json['person_id'])
@@ -1234,10 +1238,10 @@ def delete_connection_played(tx, the_id):
         return {'id': the_id}
 
 
-@api.route('/admin/connection/played/<int:the_id>', methods=['DELETE'])
+@api.route('/admin/connection/show/played/<int:the_id>', methods=['DELETE'])
 def delete_connection_played_route(the_id):
     """
-    http DELETE http://127.0.0.1:5000/admin/connection/played/<int:the_id>
+    http DELETE http://127.0.0.1:5000/admin/connection/show/played/<int:the_id>
     :param the_id: int
     :return: {}
     """
@@ -1252,7 +1256,7 @@ def delete_connection_played_route(the_id):
         return jsonify(response)
 
 
-# /admin/connection/directed--------------------------------------------------------------------------------------------
+# /admin/connection/show/directed---------------------------------------------------------------------------------------
 
 
 def get_connections_directed(tx):
@@ -1265,10 +1269,10 @@ def get_connections_directed(tx):
     return locate_connection_result
 
 
-@api.route('/admin/connection/directed', methods=['GET'])
+@api.route('/admin/connection/show/directed', methods=['GET'])
 def get_connections_directed_route():
     """
-    http GET http://127.0.0.1:5000/admin/connection/directed
+    http GET http://127.0.0.1:5000/admin/connection/show/directed
     :return: {}
     """
     with driver.session() as session:
@@ -1297,17 +1301,17 @@ def add_connection_directed(tx, person_id, title):
         return {'person': person_id, 'show': title}
 
 
-@api.route('/admin/connection/directed', methods=['POST'])
+@api.route('/admin/connection/show/directed', methods=['POST'])
 def add_connection_directed_route():
     """
-    http POST http://127.0.0.1:5000/admin/connection/directed person_id=00 title="title"
+    http POST http://127.0.0.1:5000/admin/connection/show/directed person_id=11 title="title"
     :return: {}
     """
     person_id = int(request.json['person_id'])
-    show_title = request.json['title']
+    title = request.json['title']
 
     with driver.session() as session:
-        connection = session.write_transaction(add_connection_directed, person_id, show_title)
+        connection = session.write_transaction(add_connection_directed, person_id, title)
 
     if not connection:
         response = {'message': 'Invalid arguments!'}
@@ -1327,10 +1331,10 @@ def delete_connection_directed(tx, the_id):
         return {'id': the_id}
 
 
-@api.route('/admin/connection/directed/<int:the_id>', methods=['DELETE'])
+@api.route('/admin/connection/show/directed/<int:the_id>', methods=['DELETE'])
 def delete_connection_directed_route(the_id):
     """
-    http DELETE http://127.0.0.1:5000/admin/connection/directed/<int:the_id>
+    http DELETE http://127.0.0.1:5000/admin/connection/show/directed/<int:the_id>
     :param the_id: int
     :return: {}
     """
