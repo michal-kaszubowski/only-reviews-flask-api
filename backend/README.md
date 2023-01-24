@@ -102,3 +102,10 @@ http DELETE http://127.0.0.1:5000/reviews/<int:the_id>
    http POST http://127.0.0.1:5000/connection/review/likes nick="nick" review_id=11
    * DELETE:<br />
    http DELETE http://127.0.0.1:5000/connection/review/likes/<int:the_id>
+2. COMMENTS:
+   * GET:<br />
+   http GET http://127.0.0.1:5000/connection/review/comments
+   * POST:<br />
+   http POST http://127.0.0.1:5000/connection/review/comments nick="nick" comment="comment" review_id=10
+   * DELETE:<br />
+   http DELETE http://127.0.0.1:5000/connection/review/comments/<int:the_id>

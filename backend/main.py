@@ -1445,5 +1445,97 @@ def delete_connection_likes_review_route(the_id):
         return jsonify(response)
 
 
+# /connection/review/comments-------------------------------------------------------------------------------------------
+
+
+def get_review_comments(tx):
+    locate_connection = """
+        MATCH (user:User)-[comment:COMMENTS]-(:Review)-[:ABOUT]-(show:Show)
+        WITH user.nick AS author, comment.comment AS body, ID(comment) AS id, show.title AS title
+        RETURN author, body, id, title
+    """
+    locate_connection_result = tx.run(locate_connection).data()
+    return locate_connection_result
+
+
+@api.route('/connection/review/comments', methods=['GET'])
+def get_review_comments_route():
+    """
+    http GET http://127.0.0.1:5000/connection/review/comments
+    :return: {}
+    """
+    with driver.session() as session:
+        connections = session.read_transaction(get_review_comments)
+
+    response = {'connections': connections}
+    return jsonify(response)
+
+
+def add_review_comment(tx, nick, comment, review_id):
+    locate_user = "MATCH (user:User {nick: $nick}) RETURN user"
+    locate_user_result = tx.run(locate_user, nick=nick).data()
+
+    locate_review = "MATCH (review:Review) WHERE ID(review) = $review_id RETURN review"
+    locate_review_result = tx.run(locate_review, review_id=review_id).data()
+
+    if locate_user_result and locate_review_result:
+        create_connection = """
+            MATCH (user:User {nick: $nick})
+            MATCH (review:Review) WHERE ID(review) = $review_id
+            CREATE (user)-[:COMMENTS {comment: $comment}]->(review)
+        """
+        tx.run(create_connection, nick=nick, review_id=review_id, comment=comment)
+        return {'user': nick, 'comment': comment, 'review_id': review_id}
+
+
+@api.route('/connection/review/comments', methods=['POST'])
+def add_review_comment_route():
+    """
+    http POST http://127.0.0.1:5000/connection/review/comments nick="nick" comment="comment" review_id=10
+    :return: {}
+    """
+    nick = request.json['nick']
+    comment = request.json['comment']
+    review_id = int(request.json['review_id'])
+
+    with driver.session() as session:
+        connection = session.write_transaction(add_review_comment, nick, comment, review_id)
+
+    if not connection:
+        response = {'message': 'Invalid arguments!'}
+        return jsonify(response)
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
+def delete_review_comment(tx, the_id):
+    locate_connection = "MATCH (:User)-[comment:COMMENTS]-(:Review) WHERE ID(comment) = $the_id RETURN comment"
+    locate_connection_result = tx.run(locate_connection, the_id=the_id).data()
+
+    if locate_connection_result:
+        delete_connection = "MATCH (:User)-[comment:COMMENTS]-(:Review) WHERE ID(comment) = $the_id DELETE comment"
+        tx.run(delete_connection, the_id=the_id)
+        return {'id': the_id}
+
+
+@api.route('/connection/review/comments/<int:the_id>', methods=['DELETE'])
+def delete_review_comment_route(the_id):
+    """
+    http DELETE http://127.0.0.1:5000/connection/review/comments/<int:the_id>
+    :param the_id:
+    :return:
+    """
+    with driver.session() as session:
+        connection = session.write_transaction(delete_review_comment, the_id)
+
+    if not connection:
+        response = {'message': 'Connection not found!'}
+        return jsonify(response)
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
 if __name__ == '__main__':
     api.run()
