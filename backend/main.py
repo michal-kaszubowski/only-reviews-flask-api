@@ -328,6 +328,32 @@ def get_shows_route():
     return jsonify(response)
 
 
+def get_top_shows(tx):
+    locate_title = """
+        MATCH (show:Show)-[:BELONGS]-(genre:Genre)
+        OPTIONAL MATCH (show)-[like:LIKES]-(:User)
+        WITH show.title AS title, show.photo AS photo, ID(show) AS id, genre.name AS genre, count(like) AS score
+        RETURN title, photo, genre, id, score
+        ORDER BY score DESC
+        LIMIT 5
+    """
+    locate_title_result = tx.run(locate_title).data()
+    return locate_title_result
+
+
+@api.route('/shows/top', methods=['GET'])
+def get_top_shows_route():
+    """
+    http GET http://127.0.0.1:5000/shows/top
+    :return: {}
+    """
+    with driver.session() as session:
+        shows = session.read_transaction(get_top_shows)
+
+    response = {'shows': shows}
+    return jsonify(response)
+
+
 def get_show_info(tx, the_id):
     locate_title = """
         MATCH (show:Show)-[:BELONGS]-(genre:Genre)
