@@ -811,10 +811,10 @@ def add_review(tx, nick, title, body):
 @api.route('/reviews', methods=['POST'])
 def add_review_route():
     """
-    http POST http://127.0.0.1:5000/reviews nick="nick" title="title" body="body"
+    http POST http://127.0.0.1:5000/reviews user="user" title="title" body="body"
     :return: {}
     """
-    nick = request.json['nick']
+    nick = request.json['user']
     title = request.json['title']
     body = request.json['body']
 
@@ -937,10 +937,10 @@ def add_connection_seen(tx, nick, title):
 @api.route('/connection/show/seen', methods=['POST'])
 def add_connection_seen_route():
     """
-    http POST http://127.0.0.1:5000/connection/show/seen nick="nick" title="title"
+    http POST http://127.0.0.1:5000/connection/show/seen user="user" title="title"
     :return: {}
     """
-    nick = request.json['nick']
+    nick = request.json['user']
     title = request.json['title']
 
     with driver.session() as session:
@@ -1028,10 +1028,10 @@ def add_connection_likes(tx, nick, title):
 @api.route('/connection/show/likes', methods=['POST'])
 def add_connection_likes_route():
     """
-    http POST http://127.0.0.1:5000/connection/show/likes nick="nick" title="title"
+    http POST http://127.0.0.1:5000/connection/show/likes user="user" title="title"
     :return: {}
     """
-    nick = request.json['nick']
+    nick = request.json['user']
     title = request.json['title']
 
     with driver.session() as session:
@@ -1119,10 +1119,10 @@ def add_connection_wants_to_watch(tx, nick, title):
 @api.route('/connection/show/wants_to_watch', methods=['POST'])
 def add_connection_wants_to_watch_route():
     """
-    http POST http://127.0.0.1:5000/connection/show/wants_to_watch nick="nick" title="title"
+    http POST http://127.0.0.1:5000/connection/show/wants_to_watch user="user" title="title"
     :return: {}
     """
-    nick = request.json['nick']
+    nick = request.json['user']
     title = request.json['title']
 
     with driver.session() as session:
@@ -1222,6 +1222,40 @@ def add_connection_route():
 
     if not connection:
         response = {'message': 'Invalid arguments!'}
+        return jsonify(response)
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
+def put_connection_played_role(tx, the_id, role):
+    locate_connection = "MATCH (:Person)-[conn:PLAYED]-(:Show) WHERE ID(conn) = $the_id RETURN conn"
+    locate_connection_result = tx.run(locate_connection, the_id=the_id).data()
+
+    if locate_connection_result:
+        update_connection_body = """
+            MATCH (:Person)-[conn:PLAYED]-(:Show)
+            WHERE ID(conn) = $the_id
+            SET conn.role = $role
+        """
+        tx.run(update_connection_body, the_id=the_id, role=role)
+        return {'id': the_id, 'role': role}
+
+
+@api.route('/admin/connection/show/played/<int:the_id>', methods=['PUT'])
+def put_connection_played_role_route(the_id):
+    """
+    http PUT http://127.0.0.1:5000/admin/connection/show/played/<int:the_id> role="role"
+    :param the_id: int
+    :return: {}
+    """
+    role = request.json['role']
+
+    with driver.session() as session:
+        connection = session.write_transaction(put_connection_played_role, the_id, role)
+
+    if not connection:
+        response = {'message': 'Connection not found!'}
         return jsonify(response)
     else:
         response = {'status': 'success'}
@@ -1400,10 +1434,10 @@ def add_connection_likes_review(tx, nick, review_id):
 @api.route('/connection/review/likes', methods=['POST'])
 def add_connection_likes_review_route():
     """
-    http POST http://127.0.0.1:5000/connection/review/likes nick="nick" review_id=11
+    http POST http://127.0.0.1:5000/connection/review/likes user="user" review_id=11
     :return: {}
     """
-    nick = request.json['nick']
+    nick = request.json['user']
     review_id = int(request.json['review_id'])
 
     with driver.session() as session:
@@ -1491,10 +1525,10 @@ def add_review_comment(tx, nick, comment, review_id):
 @api.route('/connection/review/comments', methods=['POST'])
 def add_review_comment_route():
     """
-    http POST http://127.0.0.1:5000/connection/review/comments nick="nick" comment="comment" review_id=10
+    http POST http://127.0.0.1:5000/connection/review/comments user="user" comment="comment" review_id=10
     :return: {}
     """
-    nick = request.json['nick']
+    nick = request.json['user']
     comment = request.json['comment']
     review_id = int(request.json['review_id'])
 
@@ -1503,6 +1537,40 @@ def add_review_comment_route():
 
     if not connection:
         response = {'message': 'Invalid arguments!'}
+        return jsonify(response)
+    else:
+        response = {'status': 'success'}
+        return jsonify(response)
+
+
+def put_review_comment(tx, the_id, comment):
+    locate_connection = "MATCH (:User)-[conn:COMMENTS]-(:Review) WHERE ID(conn) = $the_id RETURN conn"
+    locate_connection_result = tx.run(locate_connection, the_id=the_id).data()
+
+    if locate_connection_result:
+        update_connection = """
+            MATCH (:User)-[conn:COMMENTS]-(:Review)
+            WHERE ID(conn) = $the_id
+            SET conn.comment = $comment
+        """
+        tx.run(update_connection, the_id=the_id, comment=comment)
+        return {'id': the_id, 'comment': comment}
+
+
+@api.route('/connection/review/comments/<int:the_id>', methods=['PUT'])
+def put_review_comment_route(the_id):
+    """
+    http PUT http://127.0.0.1:5000/connection/review/comments/<int:the_id> comment="comment"
+    :param the_id: int
+    :return: {}
+    """
+    comment = request.json['comment']
+
+    with driver.session() as session:
+        connection = session.write_transaction(put_review_comment, the_id, comment)
+
+    if not connection:
+        response = {'message': 'Connection not found!'}
         return jsonify(response)
     else:
         response = {'status': 'success'}

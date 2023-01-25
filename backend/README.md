@@ -62,21 +62,21 @@ http DELETE http://127.0.0.1:5000/reviews/<int:the_id>
    * GET connections:<br />
    http GET http://127.0.0.1:5000/connection/show/seen
    * POST new connection:<br />
-   http POST http://127.0.0.1:5000/connection/show/seen nick="nick" title="title"
+   http POST http://127.0.0.1:5000/connection/show/seen user="user" title="title"
    * DELETE connection by ID:<br />
    http DELETE http://127.0.0.1:5000/connection/show/seen/<int:the_id>
 2. LIKES:
     * GET all connections LIKES:<br />
    http GET http://127.0.0.1:5000/connection/show/likes
     * POST connection:<br />
-   http POST http://127.0.0.1:5000/connection/show/likes nick="nick" title="title"
+   http POST http://127.0.0.1:5000/connection/show/likes user="user" title="title"
     * DELETE connection by ID:<br />
    http DELETE http://127.0.0.1:5000/connection/show/likes/<int:the_id>
 3. WANTS_TO_WATCH:
     * GET connections:<br />
    http GET http://127.0.0.1:5000/connection/show/wants_to_watch
     * POST connection:<br />
-   http POST http://127.0.0.1:5000/connection/show/wants_to_watch nick="nick" title="title"
+   http POST http://127.0.0.1:5000/connection/show/wants_to_watch user="user" title="title"
     * DELETE connection:<br />
    http DELETE http://127.0.0.1:5000/connection/show/wants_to_watch/<int:the_id>
 4. PLAYED:
@@ -84,6 +84,8 @@ http DELETE http://127.0.0.1:5000/reviews/<int:the_id>
    http GET http://127.0.0.1:5000/admin/connection/show/played
     * POST new:<br />
    http POST http://127.0.0.1:5000/admin/connection/show/played person_id=11 role="role" title="title"
+    * PUT connection's info:<br />
+   http PUT http://127.0.0.1:5000/admin/connection/show/played/<int:the_id> role="role"
     * DELETE:<br />
    http DELETE http://127.0.0.1:5000/admin/connection/show/played/<int:the_id>
 5. DIRECTED:
@@ -99,13 +101,15 @@ http DELETE http://127.0.0.1:5000/reviews/<int:the_id>
    * GET:<br />
    http GET http://127.0.0.1:5000/connection/review/likes
    * POST:<br />
-   http POST http://127.0.0.1:5000/connection/review/likes nick="nick" review_id=11
+   http POST http://127.0.0.1:5000/connection/review/likes user="user" review_id=11
    * DELETE:<br />
    http DELETE http://127.0.0.1:5000/connection/review/likes/<int:the_id>
 2. COMMENTS:
    * GET:<br />
    http GET http://127.0.0.1:5000/connection/review/comments
    * POST:<br />
-   http POST http://127.0.0.1:5000/connection/review/comments nick="nick" comment="comment" review_id=10
+   http POST http://127.0.0.1:5000/connection/review/comments user="user" comment="comment" review_id=10
+   * PUT comment's body:<br />
+   http PUT http://127.0.0.1:5000/connection/review/comments/<int:the_id> comment="comment"
    * DELETE:<br />
    http DELETE http://127.0.0.1:5000/connection/review/comments/<int:the_id>
