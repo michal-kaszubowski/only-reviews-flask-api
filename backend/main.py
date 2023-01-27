@@ -121,7 +121,6 @@ def get_persons(tx):
     persons = [{
         'name': result['person']['name'],
         'surname': result['person']['surname'],
-        'born': result['person']['born'],
         'photo': result['person']['photo'],
         'id': result['id']
     } for result in locate_person_result]
@@ -147,19 +146,22 @@ def get_person_info(tx, the_id):
         WHERE ID(person) = $the_id
         OPTIONAL MATCH (person)-[played:PLAYED]-(in:Show)
         OPTIONAL MATCH (person)-[:DIRECTED]-(what:Show)
-        WITH person, collect(played.role) AS roles, collect(in.title) AS filmography, collect(what.title) AS directed
-        RETURN person, roles, filmography, directed
+        WITH person,
+            ID(person) AS id,
+            collect(distinct played.role) AS roles,
+            collect(distinct in.title) AS filmography,
+            collect(distinct what.title) AS directed
+        RETURN person, id, roles, filmography, directed
     """
     locate_person_result = tx.run(locate_person, the_id=the_id).data()
 
     if locate_person_result:
         person = {
+            'id': locate_person_result[0]['id'],
             'name': locate_person_result[0]['person']['name'],
             'surname': locate_person_result[0]['person']['surname'],
             'born': locate_person_result[0]['person']['born'],
             'photo': locate_person_result[0]['person']['photo'],
-            # 'roles': locate_person_result[0]['roles'],
-            # 'filmography': locate_person_result[0]['filmography'],
             'filmography': [{
                 'role': locate_person_result[0]['roles'][i],
                 'title': locate_person_result[0]['filmography'][i]
@@ -298,21 +300,11 @@ def get_shows(tx):
     locate_title = """
         MATCH (show:Show)-[:BELONGS]-(genre:Genre)
         OPTIONAL MATCH (show)-[like:LIKES]-(:User)
-        WITH *, ID(show) AS id, count(like) AS score
-        RETURN show, genre, id, score
+        WITH show.title AS title, show.photo AS photo, genre.name AS genre, ID(show) AS id, count(like) AS score
+        RETURN title, photo, genre, id, score
     """
     locate_title_result = tx.run(locate_title).data()
-
-    shows = [{
-        'title': result['show']['title'],
-        'genre': result['genre']['name'],
-        'photo': result['show']['photo'],
-        'episodes': result['show']['episodes'],
-        'released': result['show']['released'],
-        'ended': result['show']['ended'],
-        'id': result['id']
-    } for result in locate_title_result]
-    return shows
+    return locate_title_result
 
 
 @api.route('/shows', methods=['GET'])
@@ -366,14 +358,14 @@ def get_show_info(tx, the_id):
         WITH show,
             genre,
             ID(show) AS id,
-            director.name AS name,
-            director.surname AS surname,
-            collect(played.role) AS roles,
-            collect(actor) AS cast,
-            count(user) AS score,
-            collect(review) AS reviews,
-            collect(author) AS authors
-        RETURN show, genre, id, name, surname, roles, cast, score, reviews, authors
+            collect(distinct director) AS directors,
+            collect(distinct played.role) AS roles,
+            collect(distinct actor) AS cast,
+            count(distinct user) AS score,
+            collect(distinct review) AS reviews,
+            collect(distinct ID(review)) AS review_ids,
+            collect(distinct author) AS authors
+        RETURN show, genre, id, directors, roles, cast, score, reviews, review_ids, authors
     """
     locate_title_result = tx.run(locate_title, the_id=the_id).data()
 
@@ -386,10 +378,10 @@ def get_show_info(tx, the_id):
             'episodes': locate_title_result[0]['show']['episodes'],
             'released': locate_title_result[0]['show']['released'],
             'ended': locate_title_result[0]['show']['ended'],
-            'director': {
-                'name': locate_title_result[0]['name'],
-                'surname': locate_title_result[0]['surname']
-            },
+            'director': [{
+                'name': locate_title_result[0]['directors'][i]['name'],
+                'surname': locate_title_result[0]['directors'][i]['surname']
+            } for i in range(0, len(locate_title_result[0]['directors']))],
             'cast': [{
                 'name': locate_title_result[0]['cast'][i]['name'],
                 'surname': locate_title_result[0]['cast'][i]['surname'],
@@ -398,7 +390,8 @@ def get_show_info(tx, the_id):
             'score': locate_title_result[0]['score'],
             'reviews': [{
                 'author': locate_title_result[0]['authors'][i]['nick'],
-                'body': locate_title_result[0]['reviews'][i]['body']
+                'body': locate_title_result[0]['reviews'][i]['body'],
+                'id': locate_title_result[0]['review_ids'][i]
             } for i in range(0, len(locate_title_result[0]['reviews']))]
         }
         return show
@@ -598,14 +591,31 @@ def get_user_info(tx, the_id):
         OPTIONAL MATCH (user)-[:SEEN]-(seen:Show)
         OPTIONAL MATCH (user)-[:LIKES]-(liked:Show)
         OPTIONAL MATCH (user)-[:WANTS_TO_WATCH]-(to_watch:Show)
-        OPTIONAL MATCH (user)-[:WROTE]-(review:Review)
+        OPTIONAL MATCH (user)-[:WROTE]-(written:Review)-[:ABOUT]-(review_about:Show)
+        OPTIONAL MATCH (user)-[comment:COMMENTS]-(commented:Review)-[:ABOUT]-(comment_about:Show)
+        OPTIONAL MATCH (commented)-[:WROTE]-(author:User)
         WITH user,
             ID(user) AS id,
-            collect(seen.title) AS seen_shows,
-            collect(liked.title) AS favourite,
-            collect(to_watch.title) AS watchlist,
-            collect(review) AS reviews
-        RETURN user, id, seen_shows, favourite, watchlist, reviews
+            collect(distinct seen.title) AS seen_shows,
+            collect(distinct liked.title) AS favourite,
+            collect(distinct to_watch.title) AS watchlist,
+            collect(distinct written.body) AS written_reviews,
+            collect(review_about.title) AS reviews_titles,
+            collect(distinct comment.comment) AS comments,
+            collect(comment_about.title) AS comments_titles,
+            collect(distinct ID(comment)) AS comments_ids,
+            collect(author.nick) AS authors
+        RETURN user,
+            id,
+            seen_shows,
+            favourite,
+            watchlist,
+            written_reviews,
+            reviews_titles,
+            comments,
+            comments_titles,
+            comments_ids,
+            authors
     """
     locate_user_result = tx.run(locate_user, the_id=the_id).data()
 
@@ -619,7 +629,18 @@ def get_user_info(tx, the_id):
             'seen_shows': locate_user_result[0]['seen_shows'],
             'favourite': locate_user_result[0]['favourite'],
             'watchlist': locate_user_result[0]['watchlist'],
-            'reviews': locate_user_result[0]['reviews']
+            'reviews': [{
+                'review': locate_user_result[0]['written_reviews'][i],
+                'title': locate_user_result[0]['reviews_titles'][i]
+            } for i in range(0, len(locate_user_result[0]['written_reviews']))],
+            'comments': [{
+                'review': {
+                    'author': locate_user_result[0]['authors'][i],
+                    'title': locate_user_result[0]['comments_titles'][i]
+                },
+                'comment': locate_user_result[0]['comments'][i],
+                'id': locate_user_result[0]['comments_ids'][i]
+            } for i in range(0, len(locate_user_result[0]['comments']))]
         }
         return user
 
@@ -923,8 +944,8 @@ def delete_review_route(the_id):
 def get_connections_seen(tx):
     locate_connection = """
         MATCH (user:User)-[conn:SEEN]-(show:Show)
-        WITH user.nick AS nick, ID(conn) AS id, show.title AS title
-        RETURN nick, id, title
+        WITH user.nick AS user, ID(conn) AS id, show.title AS title
+        RETURN user, id, title
     """
     locate_connection_result = tx.run(locate_connection).data()
     return locate_connection_result
@@ -1014,8 +1035,8 @@ def delete_connection_seen_route(the_id):
 def get_connections_likes(tx):
     locate_connection = """
         MATCH (user:User)-[conn:LIKES]-(show:Show)
-        WITH user.nick AS nick, ID(conn) AS id, show.title AS title
-        RETURN nick, id, title
+        WITH user.nick AS user, ID(conn) AS id, show.title AS title
+        RETURN user, id, title
     """
     locate_connection_result = tx.run(locate_connection).data()
     return locate_connection_result
@@ -1105,8 +1126,8 @@ def delete_connection_likes_route(the_id):
 def get_connections_wants_to_watch(tx):
     locate_connection = """
         MATCH (user:User)-[conn:WANTS_TO_WATCH]-(show:Show)
-        WITH user.nick AS nick, ID(conn) AS id, show.title AS title
-        RETURN nick, id, title
+        WITH user.nick AS user, ID(conn) AS id, show.title AS title
+        RETURN user, id, title
     """
     locate_connection_result = tx.run(locate_connection).data()
     return locate_connection_result
@@ -1510,9 +1531,14 @@ def delete_connection_likes_review_route(the_id):
 
 def get_review_comments(tx):
     locate_connection = """
-        MATCH (user:User)-[comment:COMMENTS]-(:Review)-[:ABOUT]-(show:Show)
-        WITH user.nick AS author, comment.comment AS body, ID(comment) AS id, show.title AS title
-        RETURN author, body, id, title
+        MATCH (user:User)-[comment:COMMENTS]-(review:Review)-[:ABOUT]-(show:Show)
+        MATCH (author:User)-[:WROTE]-(review)
+        WITH user.nick AS comment_author,
+            comment.comment AS comment,
+            ID(comment) AS id,
+            show.title AS title,
+            author.nick AS review_author
+        RETURN comment_author, comment, id, title, review_author
     """
     locate_connection_result = tx.run(locate_connection).data()
     return locate_connection_result
