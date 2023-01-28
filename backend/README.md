@@ -16,13 +16,19 @@ http DELETE http://127.0.0.1:5000/admin/genres/<int:the_id>
 ### Persons
 1. GET all persons (person can be both actor and director but not a user):<br />
 http GET http://127.0.0.1:5000/persons
-2. GET person info by its ID:<br />
+2. GET person by its name (name & surname):<br />
+http GET http://127.0.0.1:5000/persons/find/by_name/<string:name>&<string:surname>
+3. Sort persons by name:<br />
+http GET http://127.0.0.1:5000/persons/sort/by_name
+4. Sort persons by name in reverse order:<br />
+http GET http://127.0.0.1:5000/persons/sort/reverse/by_name
+5. GET person info by its ID:<br />
 http GET http://127.0.0.1:5000/persons/<int:the_id>
-3. POST new :Person node:<br />
+6. POST new :Person node:<br />
 http POST http://127.0.0.1:5000/admin/persons name="name" surname="surname" born=1999 photo="photoURL"
-4. PUT persons info:<br />
+7. PUT persons info:<br />
 http PUT http://127.0.0.1:5000/admin/persons/<int:the_id> name="name" surname="surname" born=1999 photo="photoURL"
-5. DELETE :Person by ID:<br />
+8. DELETE :Person by ID:<br />
 http DELETE http://127.0.0.1:5000/admin/persons/<int:the_id>
 
 ### Shows

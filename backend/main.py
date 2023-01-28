@@ -156,18 +156,11 @@ def delete_genre_route(the_id):
 def get_persons(tx):
     locate_person = """
         MATCH (person:Person)
-        WITH person, ID(person) AS id
-        RETURN person, id
+        WITH person.name AS name, person.surname AS surname, person.photo AS photo, ID(person) AS id
+        RETURN name, surname, photo, id
     """
     locate_person_result = tx.run(locate_person).data()
-
-    persons = [{
-        'name': result['person']['name'],
-        'surname': result['person']['surname'],
-        'photo': result['person']['photo'],
-        'id': result['id']
-    } for result in locate_person_result]
-    return persons
+    return locate_person_result
 
 
 @api.route('/persons', methods=['GET'])
@@ -178,6 +171,79 @@ def get_persons_route():
     """
     with driver.session() as session:
         persons = session.read_transaction(get_persons)
+
+    response = {'persons': persons}
+    return jsonify(response)
+
+
+def find_person_by_name(tx, name, surname):
+    locate_person = """
+        MATCH (person:Person {name: $name, surname: $surname})
+        WITH person.name AS name, person.surname AS surname, person.photo AS photo, ID(person) AS id
+        RETURN name, surname, photo, id
+    """
+    locate_person_result = tx.run(locate_person, name=name, surname=surname).data()
+    return locate_person_result
+
+
+@api.route('/persons/find/by_name/<string:name>&<string:surname>', methods=['GET'])
+def find_person_by_name_route(name, surname):
+    """
+    http GET http://127.0.0.1:5000/persons/find/by_name/<string:name>&<string:surname>
+    :param name: string
+    :param surname: string
+    :return: {}
+    """
+    with driver.session() as session:
+        person = session.read_transaction(find_person_by_name, name, surname)
+
+    response = {'person': person}
+    return jsonify(response)
+
+
+def sort_persons_by_surname(tx):
+    locate_person = """
+        MATCH (person:Person)
+        WITH person.name AS name, person.surname AS surname, person.photo AS photo, ID(person) AS id
+        RETURN name, surname, photo, id
+        ORDER BY surname
+    """
+    locate_person_result = tx.run(locate_person).data()
+    return locate_person_result
+
+
+@api.route('/persons/sort/by_name', methods=['GET'])
+def sort_persons_by_surname_route():
+    """
+    http GET http://127.0.0.1:5000/persons/sort/by_name
+    :return: {}
+    """
+    with driver.session() as session:
+        persons = session.read_transaction(sort_persons_by_surname)
+
+    response = {'persons': persons}
+    return jsonify(response)
+
+
+def reverse_sort_persons_by_surname(tx):
+    locate_person = """
+        MATCH (person:Person)
+        WITH person.name AS name, person.surname AS surname, person.photo AS photo, ID(person) AS id
+        RETURN name, surname, photo, id
+        ORDER BY surname DESC
+    """
+    locate_person_result = tx.run(locate_person).data()
+    return locate_person_result
+
+
+@api.route('/persons/sort/reverse/by_name', methods=['GET'])
+def reverse_sort_persons_by_surname_route():
+    """
+    http GET http://127.0.0.1:5000/persons/sort/reverse/by_name
+    :return: {}
+    """
+    with driver.session() as session:
+        persons = session.read_transaction(reverse_sort_persons_by_surname)
 
     response = {'persons': persons}
     return jsonify(response)
