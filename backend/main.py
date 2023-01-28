@@ -349,8 +349,9 @@ def get_top_shows_route():
 def find_show_by_name(tx, title):
     locate_title = """
         MATCH (show:Show {title: $title})-[:BELONGS]-(genre:Genre)
-        WITH show.title AS title, ID(show) AS id, genre.name AS genre
-        RETURN title, id, genre
+        OPTIONAL MATCH (show)-[like:LIKES]-(:User)
+        WITH show.title AS title, show.photo AS photo, ID(show) AS id, genre.name AS genre, count(like) AS score
+        RETURN title, photo, id, genre, score
     """
     locate_title_result = tx.run(locate_title, title=title).data()
     return locate_title_result
@@ -367,6 +368,56 @@ def find_show_by_name_route(title):
         show = session.read_transaction(find_show_by_name, title)
 
     response = {'show': show}
+    return jsonify(response)
+
+
+def sort_shows_by_genre(tx):
+    locate_title = """
+        MATCH (show:Show)-[:BELONGS]-(genre:Genre)
+        OPTIONAL MATCH (show)-[like:LIKES]-(:User)
+        WITH show.title AS title, show.photo AS photo, genre.name AS genre, ID(show) AS id, count(like) AS score
+        RETURN title, photo, genre, id, score
+        ORDER BY genre
+    """
+    locate_title_result = tx.run(locate_title).data()
+    return locate_title_result
+
+
+@api.route('/shows/sort/by_genre', methods=['GET'])
+def sort_shows_by_genre_route():
+    """
+    http GET http://127.0.0.1:5000/shows/sort/by_genre
+    :return: {}
+    """
+    with driver.session() as session:
+        shows = session.read_transaction(sort_shows_by_genre)
+
+    response = {'shows': shows}
+    return jsonify(response)
+
+
+def reverse_sort_shows_by_genre(tx):
+    locate_title = """
+        MATCH (show:Show)-[:BELONGS]-(genre:Genre)
+        OPTIONAL MATCH (show)-[like:LIKES]-(:User)
+        WITH show.title AS title, show.photo AS photo, genre.name AS genre, ID(show) AS id, count(like) AS score
+        RETURN title, photo, genre, id, score
+        ORDER BY genre DESC
+    """
+    locate_title_result = tx.run(locate_title).data()
+    return locate_title_result
+
+
+@api.route('/shows/sort/reverse/by_genre', methods=['GET'])
+def reverse_sort_shows_by_genre_route():
+    """
+    http GET http://127.0.0.1:5000/shows/sort/reverse/by_genre
+    :return: {}
+    """
+    with driver.session() as session:
+        shows = session.read_transaction(reverse_sort_shows_by_genre)
+
+    response = {'shows': shows}
     return jsonify(response)
 
 

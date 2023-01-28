@@ -28,13 +28,17 @@ http GET http://127.0.0.1:5000/shows
 http GET http://127.0.0.1:5000/shows/top
 3. GET show by its title:<br />
 http GET http://127.0.0.1:5000/shows/find/by_name/<string:title>
-4. GET show details by ID:<br />
+4. Sort shows by genre:<br />
+http GET http://127.0.0.1:5000/shows/sort/by_genre
+5. Sort shows by genre in reverse order:<br />
+http GET http://127.0.0.1:5000/shows/sort/reverse/by_genre
+6. GET show details by ID:<br />
 http GET http://127.0.0.1:5000/shows/<int:the_id>
-5. POST new :Show:<br />
+7. POST new :Show:<br />
 http POST http://127.0.0.1:5000/admin/shows title="title" genre="genre" photo="photoURL" trailer="trailerURL" episodes=10 released="01/12/2000" ended="01/12/2001"
-6. PUT show info:<br />
+8. PUT show info:<br />
 http PUT http://127.0.0.1:5000/admin/shows/<int:the_id> title="title" genre="genre" photo="photoURL" trailer="trailerURL" episodes=10 released="01/12/2000" ended="01/12/2001"
-7. DELETE show:<br />
+9. DELETE show:<br />
 http DELETE http://127.0.0.1:5000/admin/shows/<int:the_id>
 
 ### Users
