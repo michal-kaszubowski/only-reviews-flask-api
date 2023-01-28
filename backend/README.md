@@ -1,6 +1,6 @@
 ## API:
 
-### Genres ✅️
+### Genres
 1. GET all genres in database:<br />
 http GET http://127.0.0.1:5000/genres
 2. POST new genre:<br />
@@ -9,7 +9,7 @@ http POST http://127.0.0.1:5000/admin/genres genre="name"
 4. DELETE genre by its ID:<br />
 http DELETE http://127.0.0.1:5000/admin/genres/<int:the_id>
 
-### Persons ✅️
+### Persons
 1. GET all persons (person can be both actor and director but not a user):<br />
 http GET http://127.0.0.1:5000/persons
 2. GET person info by its ID:<br />
@@ -21,21 +21,23 @@ http PUT http://127.0.0.1:5000/admin/persons/<int:the_id> name="name" surname="s
 5. DELETE :Person by ID:<br />
 http DELETE http://127.0.0.1:5000/admin/persons/<int:the_id>
 
-### Shows ✅️
+### Shows
 1. GET shows:<br />
 http GET http://127.0.0.1:5000/shows
 2. GET top 5 shows by its score:<br />
 http GET http://127.0.0.1:5000/shows/top
-3. GET show details by ID:<br />
+3. GET show by its title:<br />
+http GET http://127.0.0.1:5000/shows/find/by_name/<string:title>
+4. GET show details by ID:<br />
 http GET http://127.0.0.1:5000/shows/<int:the_id>
-4. POST new :Show:<br />
+5. POST new :Show:<br />
 http POST http://127.0.0.1:5000/admin/shows title="title" genre="genre" photo="photoURL" episodes=10 released="01/12/2000" ended="01/12/2001"
-5. PUT show info:<br />
+6. PUT show info:<br />
 http PUT http://127.0.0.1:5000/admin/shows/<int:the_id> title="title" genre="genre" photo="photoURL" episodes=10 released="01/12/2000" ended="01/12/2001"
-6. DELETE show:<br />
+7. DELETE show:<br />
 http DELETE http://127.0.0.1:5000/admin/shows/<string:title>
 
-### Users ✅️
+### Users
 1. GET all users:<br />
 http GET http://127.0.0.1:5000/users
 2. GET user details:<br />
@@ -47,7 +49,7 @@ http PUT http://127.0.0.1:5000/admin/users/<int:the_id> nick="nick" e_mail="e_ma
 5. DELETE user by its ID:<br />
 http DELETE http://127.0.0.1:5000/admin/users/<int:the_id>
 
-### Reviews ✅️
+### Reviews
 1. GET reviews:<br />
 http GET http://127.0.0.1:5000/reviews
 2. GET review info:<br />
@@ -60,7 +62,7 @@ http PUT http://127.0.0.1:5000/reviews/<int:the_id> body="body"
 http DELETE http://127.0.0.1:5000/reviews/<int:the_id>
 
 ### Show Connections
-1. SEEN: ✅️
+1. SEEN:
    * GET connections:<br />
    http GET http://127.0.0.1:5000/connection/show/seen
    * POST new connection:<br />
@@ -68,7 +70,7 @@ http DELETE http://127.0.0.1:5000/reviews/<int:the_id>
    * There is no PUT 'cause connection has no attributes.
    * DELETE connection by ID:<br />
    http DELETE http://127.0.0.1:5000/connection/show/seen/<int:the_id>
-2. LIKES: ✅️
+2. LIKES:
     * GET all connections LIKES:<br />
    http GET http://127.0.0.1:5000/connection/show/likes
     * POST connection:<br />
@@ -76,14 +78,14 @@ http DELETE http://127.0.0.1:5000/reviews/<int:the_id>
     * No PUT = no properties.
     * DELETE connection by ID:<br />
    http DELETE http://127.0.0.1:5000/connection/show/likes/<int:the_id>
-3. WANTS_TO_WATCH: ✅️
+3. WANTS_TO_WATCH:
     * GET connections:<br />
    http GET http://127.0.0.1:5000/connection/show/wants_to_watch
     * POST connection:<br />
    http POST http://127.0.0.1:5000/connection/show/wants_to_watch user="user" title="title"
     * DELETE connection:<br />
    http DELETE http://127.0.0.1:5000/connection/show/wants_to_watch/<int:the_id>
-4. PLAYED: ✅️
+4. PLAYED:
     * GET:<br />
    http GET http://127.0.0.1:5000/admin/connection/show/played
     * POST new:<br />
@@ -92,7 +94,7 @@ http DELETE http://127.0.0.1:5000/reviews/<int:the_id>
    http PUT http://127.0.0.1:5000/admin/connection/show/played/<int:the_id> role="role"
     * DELETE:<br />
    http DELETE http://127.0.0.1:5000/admin/connection/show/played/<int:the_id>
-5. DIRECTED: ✅️
+5. DIRECTED:
     * GET:<br />
    http GET http://127.0.0.1:5000/admin/connection/show/directed
     * POST:<br />
@@ -102,7 +104,7 @@ http DELETE http://127.0.0.1:5000/reviews/<int:the_id>
    http DELETE http://127.0.0.1:5000/admin/connection/show/directed/<int:the_id>
 
 ### Review Connections
-1. LIKES: ✅️
+1. LIKES:
    * GET:<br />
    http GET http://127.0.0.1:5000/connection/review/likes
    * POST:<br />

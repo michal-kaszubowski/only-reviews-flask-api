@@ -346,6 +346,30 @@ def get_top_shows_route():
     return jsonify(response)
 
 
+def find_show_by_name(tx, title):
+    locate_title = """
+        MATCH (show:Show {title: $title})-[:BELONGS]-(genre:Genre)
+        WITH show.title AS title, ID(show) AS id, genre.name AS genre
+        RETURN title, id, genre
+    """
+    locate_title_result = tx.run(locate_title, title=title).data()
+    return locate_title_result
+
+
+@api.route('/shows/find/by_name/<string:title>', methods=['GET'])
+def find_show_by_name_route(title):
+    """
+    http GET http://127.0.0.1:5000/shows/find/by_name/<string:title>
+    :param title: string
+    :return: {}
+    """
+    with driver.session() as session:
+        show = session.read_transaction(find_show_by_name, title)
+
+    response = {'show': show}
+    return jsonify(response)
+
+
 def get_show_info(tx, the_id):
     locate_title = """
         MATCH (show:Show)-[:BELONGS]-(genre:Genre)
