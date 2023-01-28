@@ -399,6 +399,7 @@ def get_show_info(tx, the_id):
             'title': locate_title_result[0]['show']['title'],
             'genre': locate_title_result[0]['genre']['name'],
             'photo': locate_title_result[0]['show']['photo'],
+            'trailer': locate_title_result[0]['show']['trailer'],
             'episodes': locate_title_result[0]['show']['episodes'],
             'released': locate_title_result[0]['show']['released'],
             'ended': locate_title_result[0]['show']['ended'],
@@ -442,7 +443,7 @@ def get_show_info_route(the_id):
 # /admin/shows----------------------------------------------------------------------------------------------------------
 
 
-def add_show(tx, title, genre, photo, episodes, released, ended):
+def add_show(tx, title, genre, photo, trailer, episodes, released, ended):
     locate_title = "MATCH (show:Show {title: $title}) RETURN show"
     locate_title_result = tx.run(locate_title, title=title).data()
 
@@ -455,16 +456,25 @@ def add_show(tx, title, genre, photo, episodes, released, ended):
             CREATE (:Show {
                 title: $title,
                 photo: $photo,
+                trailer: $trailer,
                 episodes: $episodes,
                 released: $released,
                 ended:$ended
             })-[:BELONGS]->(genre)
         """
-        tx.run(create_show, title=title, genre=genre, photo=photo, episodes=episodes, released=released, ended=ended)
+        tx.run(create_show,
+               title=title,
+               genre=genre,
+               photo=photo,
+               trailer=trailer,
+               episodes=episodes,
+               released=released,
+               ended=ended)
         return {
             'title': title,
             'genre': genre,
             'photo': photo,
+            'trailer': trailer,
             'episodes': episodes,
             'released': released,
             'ended': ended
@@ -474,19 +484,20 @@ def add_show(tx, title, genre, photo, episodes, released, ended):
 @api.route('/admin/shows', methods=['POST'])
 def add_show_route():
     """
-    http POST http://127.0.0.1:5000/admin/shows title="title" genre="genre" photo="photoURL" episodes=00
-    released="01/12/2000" ended="01/12/2001"
+    http POST http://127.0.0.1:5000/admin/shows title="title" genre="genre" photo="photoURL" trailer="trailerURL"
+    episodes=10 released="01/12/2000" ended="01/12/2001"
     :return: {}
     """
     title = request.json['title']
     genre = request.json['genre']
     photo = request.json['photo']
+    trailer = request.json['trailer']
     episodes = request.json['episodes']
     released = request.json['released']
     ended = request.json['ended']
 
     with driver.session() as session:
-        show = session.write_transaction(add_show, title, genre, photo, episodes, released, ended)
+        show = session.write_transaction(add_show, title, genre, photo, trailer, episodes, released, ended)
 
     if not show:
         response = {'message': 'Invalid arguments!'}
@@ -496,7 +507,7 @@ def add_show_route():
         return jsonify(response)
 
 
-def put_show_info(tx, the_id, title, genre, photo, episodes, released, ended):
+def put_show_info(tx, the_id, title, genre, photo, trailer, episodes, released, ended):
     locate_title = "MATCH (show:Show) WHERE ID(show) = $the_id RETURN show"
     locate_title_result = tx.run(locate_title, the_id=the_id).data()
 
@@ -511,6 +522,7 @@ def put_show_info(tx, the_id, title, genre, photo, episodes, released, ended):
             CREATE (show)-[:BELONGS]->(genre)
             SET show.title = $title,
                 show.photo = $photo,
+                show.trailer = $trailer,
                 show.episodes = $episodes,
                 show.released = $released,
                 show.ended = $ended
@@ -521,6 +533,7 @@ def put_show_info(tx, the_id, title, genre, photo, episodes, released, ended):
             title=title,
             genre=genre,
             photo=photo,
+            trailer=trailer,
             episodes=episodes,
             released=released,
             ended=ended
@@ -531,20 +544,21 @@ def put_show_info(tx, the_id, title, genre, photo, episodes, released, ended):
 @api.route('/admin/shows/<int:the_id>', methods=['PUT'])
 def put_show_info_route(the_id):
     """
-    http PUT http://127.0.0.1:5000/admin/shows/<int:the_id> title="title" genre="genre" photo="photoURL" episodes=00
-    released="01/12/2000" ended="01/12/2001"
+    http PUT http://127.0.0.1:5000/admin/shows/<int:the_id> title="title" genre="genre" photo="photoURL"
+    trailer="trailerURL" episodes=00 released="01/12/2000" ended="01/12/2001"
     :param the_id: int
     :return: {}
     """
     title = request.json['title']
     genre = request.json['genre']
     photo = request.json['photo']
+    trailer = request.json['trailer']
     episodes = request.json['episodes']
     released = request.json['released']
     ended = request.json['ended']
 
     with driver.session() as session:
-        show = session.write_transaction(put_show_info, the_id, title, genre, photo, episodes, released, ended)
+        show = session.write_transaction(put_show_info, the_id, title, genre, photo, trailer, episodes, released, ended)
 
     if not show:
         response = {'message': 'Invalid arguments!'}
@@ -567,13 +581,12 @@ def delete_show(tx, the_id):
 @api.route('/admin/shows/<int:the_id>', methods=['DELETE'])
 def delete_show_route(the_id):
     """
-    http DELETE http://127.0.0.1:5000/admin/shows/<string:title>
+    http DELETE http://127.0.0.1:5000/admin/shows/<int:the_id>
     :param the_id: int
     :return: {}
     """
     with driver.session() as session:
         show = session.write_transaction(delete_show, the_id)
-
     if not show:
         response = {'message': 'Show not found!'}
         return jsonify(response)
