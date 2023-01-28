@@ -52,13 +52,19 @@ http DELETE http://127.0.0.1:5000/admin/shows/<int:the_id>
 ### Users
 1. GET all users:<br />
 http GET http://127.0.0.1:5000/users
-2. GET user details:<br />
+2. GET user by its name:<br />
+http GET http://127.0.0.1:5000/users/find/by_name/<string:nick>
+3. Sort users by activity (from the most active to least active):<br />
+http GET http://127.0.0.1:5000/users/sort/by_activity
+4. Sort users by activity in reverse order:<br />
+http GET http://127.0.0.1:5000/users/sort/reverse/by_activity
+5. GET user details:<br />
 http GET http://127.0.0.1:5000/users/<int:the_id>
-3. POST new user:<br />
+6. POST new user:<br />
 http POST http://127.0.0.1:5000/admin/users nick="nick" e_mail="e_mail" password="password" registered="01/12/2000" photo="photoURL"
-4. PUT user info by ID:<br />
+7. PUT user info by ID:<br />
 http PUT http://127.0.0.1:5000/admin/users/<int:the_id> nick="nick" e_mail="e_mail" password="password" registered="01/12/2000" photo="photoURL"
-5. DELETE user by its ID:<br />
+8. DELETE user by its ID:<br />
 http DELETE http://127.0.0.1:5000/admin/users/<int:the_id>
 
 ### Reviews

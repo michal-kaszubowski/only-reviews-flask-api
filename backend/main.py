@@ -772,6 +772,80 @@ def get_users_route():
     return jsonify(response)
 
 
+def find_user_by_name(tx, nick):
+    locate_user = """
+        MATCH (user:User {nick: $nick})
+        WITH ID(user) AS id, user.nick AS nick, user.e_mail AS e_mail, user.photo AS photo 
+        RETURN id, nick, e_mail, photo
+    """
+    locate_user_result = tx.run(locate_user, nick=nick).data()
+    return locate_user_result
+
+
+@api.route('/users/find/by_name/<string:nick>', methods=['GET'])
+def find_user_by_name_route(nick):
+    """
+    http GET http://127.0.0.1:5000/users/find/by_name/<string:nick>
+    :param nick: string
+    :return: {}
+    """
+    with driver.session() as session:
+        user = session.read_transaction(find_user_by_name, nick)
+
+    response = {'user': user}
+    return jsonify(response)
+
+
+def sort_users_by_activity(tx):
+    locate_user = """
+        MATCH (user:User)
+        OPTIONAL MATCH (user)-[conn:WROTE|COMMENTS]-(:Review)
+        WITH ID(user) AS id, user.nick AS nick, user.e_mail AS e_mail, user.photo AS photo, count(conn) AS activity
+        RETURN id, nick, e_mail, photo
+        ORDER BY activity DESC
+    """
+    locate_user_result = tx.run(locate_user).data()
+    return locate_user_result
+
+
+@api.route('/users/sort/by_activity', methods=['GET'])
+def sort_users_by_activity_route():
+    """
+    http GET http://127.0.0.1:5000/users/sort/by_activity
+    :return: {}
+    """
+    with driver.session() as session:
+        users = session.read_transaction(sort_users_by_activity)
+
+    response = {'users': users}
+    return jsonify(response)
+
+
+def reverse_sort_users_by_activity(tx):
+    locate_user = """
+        MATCH (user:User)
+        OPTIONAL MATCH (user)-[conn:WROTE|COMMENTS]-(:Review)
+        WITH ID(user) AS id, user.nick AS nick, user.e_mail AS e_mail, user.photo AS photo, count(conn) AS activity
+        RETURN id, nick, e_mail, photo
+        ORDER BY activity
+    """
+    locate_user_result = tx.run(locate_user).data()
+    return locate_user_result
+
+
+@api.route('/users/sort/reverse/by_activity', methods=['GET'])
+def reverse_sort_users_by_activity_route():
+    """
+    http GET http://127.0.0.1:5000/users/sort/reverse/by_activity
+    :return: {}
+    """
+    with driver.session() as session:
+        users = session.read_transaction(reverse_sort_users_by_activity)
+
+    response = {'users': users}
+    return jsonify(response)
+
+
 def get_user_info(tx, the_id):
     locate_user = """
         MATCH (user:User)
