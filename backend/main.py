@@ -796,6 +796,54 @@ def find_user_by_name_route(nick):
     return jsonify(response)
 
 
+def sort_users_by_name(tx):
+    locate_user = """
+        MATCH (user:User)
+        WITH ID(user) AS id, user.nick AS nick, user.e_mail AS e_mail, user.photo AS photo 
+        RETURN id, nick, e_mail, photo
+        ORDER BY nick
+    """
+    locate_user_result = tx.run(locate_user).data()
+    return locate_user_result
+
+
+@api.route('/users/sort/by_name', methods=['GET'])
+def sort_users_by_name_route():
+    """
+    http GET http://127.0.0.1:5000/users/sort/by_name
+    :return: {}
+    """
+    with driver.session() as session:
+        users = session.read_transaction(sort_users_by_name)
+
+    response = {'users': users}
+    return jsonify(response)
+
+
+def reverse_sort_users_by_name(tx):
+    locate_user = """
+        MATCH (user:User)
+        WITH ID(user) AS id, user.nick AS nick, user.e_mail AS e_mail, user.photo AS photo 
+        RETURN id, nick, e_mail, photo
+        ORDER BY nick DESC
+    """
+    locate_user_result = tx.run(locate_user).data()
+    return locate_user_result
+
+
+@api.route('/users/sort/reverse/by_name', methods=['GET'])
+def reverse_sort_users_by_name_route():
+    """
+    http GET http://127.0.0.1:5000/users/sort/reverse/by_name
+    :return: {}
+    """
+    with driver.session() as session:
+        users = session.read_transaction(reverse_sort_users_by_name)
+
+    response = {'users': users}
+    return jsonify(response)
+
+
 def sort_users_by_activity(tx):
     locate_user = """
         MATCH (user:User)
