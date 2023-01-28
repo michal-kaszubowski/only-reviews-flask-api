@@ -3,10 +3,14 @@
 ### Genres
 1. GET all genres in database:<br />
 http GET http://127.0.0.1:5000/genres
-2. POST new genre:<br />
+2. Sort genres in alphabetic order (by name):<br />
+http GET http://127.0.0.1:5000/genres/sort/by_name
+3. Sort genres by name in reverse order:<br />
+http GET http://127.0.0.1:5000/genres/sort/reverse/by_name
+4. POST new genre:<br />
 http POST http://127.0.0.1:5000/admin/genres genre="name"
-3. There is no PUT 'cause :Genre don't have any properties.
-4. DELETE genre by its ID:<br />
+5. There is no PUT 'cause :Genre don't have any properties.
+6. DELETE genre by its ID:<br />
 http DELETE http://127.0.0.1:5000/admin/genres/<int:the_id>
 
 ### Persons

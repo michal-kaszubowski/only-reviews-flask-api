@@ -22,16 +22,11 @@ driver.verify_connectivity()
 def get_genres(tx):
     locate_genre = """
         MATCH (genre:Genre)
-        WITH *, ID(genre) AS id
+        WITH genre.name AS genre, ID(genre) AS id
         RETURN genre, id
     """
     locate_genre_result = tx.run(locate_genre).data()
-
-    genres = [{
-        'name': result['genre']['name'],
-        'id': result['id']
-    } for result in locate_genre_result]
-    return genres
+    return locate_genre_result
 
 
 @api.route('/genres', methods=['GET'])
@@ -42,6 +37,54 @@ def get_genres_route():
     """
     with driver.session() as session:
         genres = session.read_transaction(get_genres)
+
+    response = {'genres': genres}
+    return jsonify(response)
+
+
+def sort_genres_by_name(tx):
+    locate_genre = """
+        MATCH (genre:Genre)
+        WITH genre.name AS genre, ID(genre) AS id
+        RETURN genre, id
+        ORDER BY genre
+    """
+    locate_genre_result = tx.run(locate_genre).data()
+    return locate_genre_result
+
+
+@api.route('/genres/sort/by_name', methods=['GET'])
+def sort_genres_by_name_route():
+    """
+    http GET http://127.0.0.1:5000/genres/sort/by_name
+    :return: {}
+    """
+    with driver.session() as session:
+        genres = session.read_transaction(sort_genres_by_name)
+
+    response = {'genres': genres}
+    return jsonify(response)
+
+
+def reverse_sort_genres_by_name(tx):
+    locate_genre = """
+        MATCH (genre:Genre)
+        WITH genre.name AS genre, ID(genre) AS id
+        RETURN genre, id
+        ORDER BY genre DESC
+    """
+    locate_genre_result = tx.run(locate_genre).data()
+    return locate_genre_result
+
+
+@api.route('/genres/sort/reverse/by_name', methods=['GET'])
+def reverse_sort_genres_by_name_route():
+    """
+    http GET http://127.0.0.1:5000/genres/sort/reverse/by_name
+    :return: {}
+    """
+    with driver.session() as session:
+        genres = session.read_transaction(reverse_sort_genres_by_name)
 
     response = {'genres': genres}
     return jsonify(response)
