@@ -421,6 +421,56 @@ def reverse_sort_shows_by_genre_route():
     return jsonify(response)
 
 
+def sort_shows_by_title(tx):
+    locate_title = """
+            MATCH (show:Show)-[:BELONGS]-(genre:Genre)
+            OPTIONAL MATCH (show)-[like:LIKES]-(:User)
+            WITH show.title AS title, show.photo AS photo, genre.name AS genre, ID(show) AS id, count(like) AS score
+            RETURN title, photo, genre, id, score
+            ORDER BY title
+        """
+    locate_title_result = tx.run(locate_title).data()
+    return locate_title_result
+
+
+@api.route('/shows/sort/by_name', methods=['GET'])
+def sort_shows_by_title_route():
+    """
+    http GET http://127.0.0.1:5000/shows/sort/by_name
+    :return: {}
+    """
+    with driver.session() as session:
+        shows = session.read_transaction(sort_shows_by_title)
+
+    response = {'shows': shows}
+    return jsonify(response)
+
+
+def reverse_sort_shows_by_title(tx):
+    locate_title = """
+                MATCH (show:Show)-[:BELONGS]-(genre:Genre)
+                OPTIONAL MATCH (show)-[like:LIKES]-(:User)
+                WITH show.title AS title, show.photo AS photo, genre.name AS genre, ID(show) AS id, count(like) AS score
+                RETURN title, photo, genre, id, score
+                ORDER BY title DESC
+            """
+    locate_title_result = tx.run(locate_title).data()
+    return locate_title_result
+
+
+@api.route('/shows/sort/reverse/by_name', methods=['GET'])
+def reverse_sort_shows_by_title_route():
+    """
+    http GET http://127.0.0.1:5000/shows/sort/reverse/by_name
+    :return: {}
+    """
+    with driver.session() as session:
+        shows = session.read_transaction(reverse_sort_shows_by_title)
+
+    response = {'shows': shows}
+    return jsonify(response)
+
+
 def get_show_info(tx, the_id):
     locate_title = """
         MATCH (show:Show)-[:BELONGS]-(genre:Genre)
