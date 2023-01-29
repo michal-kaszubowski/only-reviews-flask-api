@@ -1341,6 +1341,217 @@ def get_reviews_route():
     return jsonify(response)
 
 
+def sort_reviews_by_score(tx):
+    locate_review = """
+        MATCH (show:Show)-[:ABOUT]-(review:Review)-[:WROTE]-(user:User)
+        OPTIONAL MATCH (review)-[like:LIKES]-(:User)
+        WITH show.title AS title, ID(review) AS id, user.nick AS author, count(like) AS score
+        RETURN title, id, author, score
+        ORDER BY score DESC
+    """
+    locate_review_result = tx.run(locate_review).data()
+    return locate_review_result
+
+
+@api.route('/reviews/sort/by_score', methods=['GET'])
+def sort_reviews_by_score_route():
+    """
+    http GET http://127.0.0.1:5000/reviews/sort/by_score
+    :return: {}
+    """
+    with driver.session() as session:
+        reviews = session.read_transaction(sort_reviews_by_score)
+
+    response = {'reviews': reviews}
+    return jsonify(response)
+
+
+def reverse_sort_reviews_by_score(tx):
+    locate_review = """
+        MATCH (show:Show)-[:ABOUT]-(review:Review)-[:WROTE]-(user:User)
+        OPTIONAL MATCH (review)-[like:LIKES]-(:User)
+        WITH show.title AS title, ID(review) AS id, user.nick AS author, count(like) AS score
+        RETURN title, id, author, score
+        ORDER BY score
+    """
+    locate_review_result = tx.run(locate_review).data()
+    return locate_review_result
+
+
+@api.route('/reviews/sort/reverse/by_score', methods=['GET'])
+def reverse_sort_reviews_by_score_route():
+    """
+    http GET http://127.0.0.1:5000/reviews/sort/reverse/by_score
+    :return: {}
+    """
+    with driver.session() as session:
+        reviews = session.read_transaction(reverse_sort_reviews_by_score)
+
+    response = {'reviews': reviews}
+    return jsonify(response)
+
+
+def sort_reviews_by_comments(tx):
+    locate_review = """
+        MATCH (show:Show)-[:ABOUT]-(review:Review)-[:WROTE]-(user:User)
+        OPTIONAL MATCH (review)-[like:LIKES]-(:User)
+        OPTIONAL MATCH (review)-[comment:COMMENTS]-(:User)
+        WITH show.title AS title,
+            ID(review) AS id,
+            user.nick AS author,
+            count(like) AS score,
+            count(comment) AS comments
+        RETURN title, id, author, score                
+        ORDER BY comments DESC
+    """
+    locate_review_result = tx.run(locate_review).data()
+    return locate_review_result
+
+
+@api.route('/reviews/sort/by_comments', methods=['GET'])
+def sort_reviews_by_comments_route():
+    """
+    http GET http://127.0.0.1:5000/reviews/sort/by_comments
+    :return: {}
+    """
+    with driver.session() as session:
+        reviews = session.read_transaction(sort_reviews_by_comments)
+
+    response = {'reviews': reviews}
+    return jsonify(response)
+
+
+def reverse_sort_reviews_by_comments(tx):
+    locate_review = """
+        MATCH (show:Show)-[:ABOUT]-(review:Review)-[:WROTE]-(user:User)
+        OPTIONAL MATCH (review)-[like:LIKES]-(:User)
+        OPTIONAL MATCH (review)-[comment:COMMENTS]-(:User)
+        WITH show.title AS title,
+            ID(review) AS id,
+            user.nick AS author,
+            count(like) AS score,
+            count(comment) AS comments
+        RETURN title, id, author, score                
+        ORDER BY comments
+    """
+    locate_review_result = tx.run(locate_review).data()
+    return locate_review_result
+
+
+@api.route('/reviews/sort/reverse/by_comments', methods=['GET'])
+def reverse_sort_reviews_by_comments_route():
+    """
+    http GET http://127.0.0.1:5000/reviews/sort/reverse/by_comments
+    :return: {}
+    """
+    with driver.session() as session:
+        reviews = session.read_transaction(reverse_sort_reviews_by_comments)
+
+    response = {'reviews': reviews}
+    return jsonify(response)
+
+
+def sort_reviews_by_title(tx):
+    locate_review = """
+        MATCH (show:Show)-[:ABOUT]-(review:Review)-[:WROTE]-(user:User)
+        OPTIONAL MATCH (review)-[like:LIKES]-(:User)
+        WITH show.title AS title, ID(review) AS id, user.nick AS author, count(like) AS score
+        RETURN title, id, author, score
+        ORDER BY title
+    """
+    locate_review_result = tx.run(locate_review).data()
+    return locate_review_result
+
+
+@api.route('/reviews/sort/by_title', methods=['GET'])
+def sort_reviews_by_title_route():
+    """
+    http GET http://127.0.0.1:5000/reviews/sort/by_title
+    :return: {}
+    """
+    with driver.session() as session:
+        reviews = session.read_transaction(sort_reviews_by_title)
+
+    response = {'reviews': reviews}
+    return jsonify(response)
+
+
+def reverse_sort_reviews_by_title(tx):
+    locate_review = """
+        MATCH (show:Show)-[:ABOUT]-(review:Review)-[:WROTE]-(user:User)
+        OPTIONAL MATCH (review)-[like:LIKES]-(:User)
+        WITH show.title AS title, ID(review) AS id, user.nick AS author, count(like) AS score
+        RETURN title, id, author, score
+        ORDER BY title DESC
+    """
+    locate_review_result = tx.run(locate_review).data()
+    return locate_review_result
+
+
+@api.route('/reviews/sort/reverse/by_title', methods=['GET'])
+def reverse_sort_reviews_by_title_route():
+    """
+    http GET http://127.0.0.1:5000/reviews/sort/reverse/by_title
+    :return: {}
+    """
+    with driver.session() as session:
+        reviews = session.read_transaction(reverse_sort_reviews_by_title)
+
+    response = {'reviews': reviews}
+    return jsonify(response)
+
+
+def sort_reviews_by_author(tx):
+    locate_review = """
+        MATCH (show:Show)-[:ABOUT]-(review:Review)-[:WROTE]-(user:User)
+        OPTIONAL MATCH (review)-[like:LIKES]-(:User)
+        WITH show.title AS title, ID(review) AS id, user.nick AS author, count(like) AS score
+        RETURN title, id, author, score
+        ORDER BY author
+    """
+    locate_review_result = tx.run(locate_review).data()
+    return locate_review_result
+
+
+@api.route('/reviews/sort/by_author', methods=['GET'])
+def sort_reviews_by_author_route():
+    """
+    http GET http://127.0.0.1:5000/reviews/sort/by_author
+    :return: {}
+    """
+    with driver.session() as session:
+        reviews = session.read_transaction(sort_reviews_by_author)
+
+    response = {'reviews': reviews}
+    return jsonify(response)
+
+
+def reverse_sort_reviews_by_author(tx):
+    locate_review = """
+        MATCH (show:Show)-[:ABOUT]-(review:Review)-[:WROTE]-(user:User)
+        OPTIONAL MATCH (review)-[like:LIKES]-(:User)
+        WITH show.title AS title, ID(review) AS id, user.nick AS author, count(like) AS score
+        RETURN title, id, author, score
+        ORDER BY author DESC
+    """
+    locate_review_result = tx.run(locate_review).data()
+    return locate_review_result
+
+
+@api.route('/reviews/sort/reverse/by_author', methods=['GET'])
+def reverse_sort_reviews_by_author_route():
+    """
+    http GET http://127.0.0.1:5000/reviews/sort/reverse/by_author
+    :return: {}
+    """
+    with driver.session() as session:
+        reviews = session.read_transaction(reverse_sort_reviews_by_author)
+
+    response = {'reviews': reviews}
+    return jsonify(response)
+
+
+
 def get_review_info(tx, the_id):
     locate_review = """
         MATCH (show:Show)-[:ABOUT]-(review:Review)-[:WROTE]-(user:User)

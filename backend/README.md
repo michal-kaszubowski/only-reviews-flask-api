@@ -92,13 +92,29 @@ http DELETE http://127.0.0.1:5000/admin/users/<int:the_id>
 ### Reviews
 1. GET reviews:<br />
 http GET http://127.0.0.1:5000/reviews
-2. GET review info:<br />
+2. Sort reviews by likes:<br />
+http GET http://127.0.0.1:5000/reviews/sort/by_score
+3. Sort reviews by likes in reverse order:<br />
+http GET http://127.0.0.1:5000/reviews/sort/reverse/by_score
+4. Sort reviews by amount of comments:<br />
+http GET http://127.0.0.1:5000/reviews/sort/by_comments
+5. Sort reviews by comments in reverse order:<br />
+http GET http://127.0.0.1:5000/reviews/sort/reverse/by_comments
+6. Sort reviews by title:<br />
+http GET http://127.0.0.1:5000/reviews/sort/by_title
+7. Sort reviews by title in reverse:<br />
+http GET http://127.0.0.1:5000/reviews/sort/reverse/by_title
+8. Sort reviews by its author:<br />
+http GET http://127.0.0.1:5000/reviews/sort/by_author
+9. Sort reviews by author in reverse:<br />
+http GET http://127.0.0.1:5000/reviews/sort/reverse/by_author
+10. GET review info:<br />
 http GET http://127.0.0.1:5000/reviews/<int:the_id>
-3. POST review:<br />
+11. POST review:<br />
 http POST http://127.0.0.1:5000/reviews user="nick" title="title" body="body"
-4. PUT review's body:<br />
+12. PUT review's body:<br />
 http PUT http://127.0.0.1:5000/reviews/<int:the_id> body="body"
-5. DELETE review:<br />
+13. DELETE review:<br />
 http DELETE http://127.0.0.1:5000/reviews/<int:the_id>
 
 ### Show Connections
