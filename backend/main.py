@@ -249,6 +249,122 @@ def reverse_sort_persons_by_surname_route():
     return jsonify(response)
 
 
+def sort_persons_by_roles(tx):
+    locate_person = """
+        MATCH (person:Person)
+        OPTIONAL MATCH (person)-[conn:PLAYED]-(:Show)
+        WITH person.name AS name,
+            person.surname AS surname,
+            person.photo AS photo,
+            ID(person) AS id,
+            count(conn) AS played
+        RETURN name, surname, photo, id
+        ORDER BY played DESC
+    """
+    locate_person_result = tx.run(locate_person).data()
+    return locate_person_result
+
+
+@api.route('/persons/sort/by_roles', methods=['GET'])
+def sort_persons_by_roles_route():
+    """
+    http GET http://127.0.0.1:5000/persons/sort/by_roles
+    :return: {}
+    """
+    with driver.session() as session:
+        persons = session.read_transaction(sort_persons_by_roles)
+
+    response = {'persons': persons}
+    return jsonify(response)
+
+
+def reverse_sort_persons_by_roles(tx):
+    locate_person = """
+        MATCH (person:Person)
+        OPTIONAL MATCH (person)-[conn:PLAYED]-(:Show)
+        WITH person.name AS name,
+            person.surname AS surname,
+            person.photo AS photo,
+            ID(person) AS id,
+            count(conn) AS played
+        RETURN name, surname, photo, id
+        ORDER BY played
+    """
+    locate_person_result = tx.run(locate_person).data()
+    return locate_person_result
+
+
+@api.route('/persons/sort/reverse/by_roles', methods=['GET'])
+def reverse_sort_persons_by_roles_route():
+    """
+    http GET http://127.0.0.1:5000/persons/sort/reverse/by_roles
+    :return: {}
+    """
+    with driver.session() as session:
+        persons = session.read_transaction(reverse_sort_persons_by_roles)
+
+    response = {'persons': persons}
+    return jsonify(response)
+
+
+def sort_persons_by_directed(tx):
+    locate_person = """
+        MATCH (person:Person)
+        OPTIONAL MATCH (person)-[conn:DIRECTED]-(:Show)
+        WITH person.name AS name,
+            person.surname AS surname,
+            person.photo AS photo,
+            ID(person) AS id,
+            count(conn) AS directed
+        RETURN name, surname, photo, id
+        ORDER BY directed DESC
+    """
+    locate_person_result = tx.run(locate_person).data()
+    return locate_person_result
+
+
+@api.route('/persons/sort/by_directed', methods=['GET'])
+def sort_persons_by_directed_route():
+    """
+    http GET http://127.0.0.1:5000/persons/sort/by_directed
+    :return: {}
+    """
+    with driver.session() as session:
+        persons = session.read_transaction(sort_persons_by_directed)
+
+    response = {'persons': persons}
+    return jsonify(response)
+
+
+def reverse_sort_persons_by_directed(tx):
+    locate_person = """
+        MATCH (person:Person)
+        OPTIONAL MATCH (person)-[conn:DIRECTED]-(:Show)
+        WITH person.name AS name,
+            person.surname AS surname,
+            person.photo AS photo,
+            ID(person) AS id,
+            count(conn) AS directed
+        RETURN name, surname, photo, id
+        ORDER BY directed
+    """
+    locate_person_result = tx.run(locate_person).data()
+    return locate_person_result
+
+
+@api.route('/persons/sort/reverse/by_directed', methods=['GET'])
+def reverse_sort_persons_by_directed_route():
+    """
+    http GET http://127.0.0.1:5000/persons/sort/reverse/by_directed
+    :return: {}
+    """
+    with driver.session() as session:
+        persons = session.read_transaction(reverse_sort_persons_by_directed)
+
+    response = {'persons': persons}
+    return jsonify(response)
+
+
 def get_person_info(tx, the_id):
     locate_person = """
         MATCH (person:Person)

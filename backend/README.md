@@ -22,13 +22,21 @@ http GET http://127.0.0.1:5000/persons/find/by_name/<string:name>&<string:surnam
 http GET http://127.0.0.1:5000/persons/sort/by_name
 4. Sort persons by name in reverse order:<br />
 http GET http://127.0.0.1:5000/persons/sort/reverse/by_name
-5. GET person info by its ID:<br />
+5. Sort persons by played roles:<br />
+http GET http://127.0.0.1:5000/persons/sort/by_roles
+6. Sort persons by played roles in reverse order:<br />
+http GET http://127.0.0.1:5000/persons/sort/reverse/by_roles
+7. Sort persons by directed movies:<br />
+http GET http://127.0.0.1:5000/persons/sort/by_directed
+8. Sort persons by directed movies in reverse order:<br />
+http GET http://127.0.0.1:5000/persons/sort/reverse/by_directed
+9. GET person info by its ID:<br />
 http GET http://127.0.0.1:5000/persons/<int:the_id>
-6. POST new :Person node:<br />
+10. POST new :Person node:<br />
 http POST http://127.0.0.1:5000/admin/persons name="name" surname="surname" born=1999 photo="photoURL"
-7. PUT persons info:<br />
+11. PUT persons info:<br />
 http PUT http://127.0.0.1:5000/admin/persons/<int:the_id> name="name" surname="surname" born=1999 photo="photoURL"
-8. DELETE :Person by ID:<br />
+12. DELETE :Person by ID:<br />
 http DELETE http://127.0.0.1:5000/admin/persons/<int:the_id>
 
 ### Shows
