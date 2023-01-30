@@ -80,13 +80,15 @@ http GET http://127.0.0.1:5000/users/sort/reverse/by_name
 http GET http://127.0.0.1:5000/users/sort/by_activity
 6. Sort users by activity in reverse order:<br />
 http GET http://127.0.0.1:5000/users/sort/reverse/by_activity
-7. GET user details:<br />
+7. GET top 3 users by activity:<br />
+http GET http://127.0.0.1:5000/users/top
+8. GET user details:<br />
 http GET http://127.0.0.1:5000/users/<int:the_id>
-8. POST new user:<br />
+9. POST new user:<br />
 http POST http://127.0.0.1:5000/admin/users nick="nick" e_mail="e_mail" password="password" registered="01/12/2000" photo="photoURL"
-9. PUT user info by ID:<br />
+10. PUT user info by ID:<br />
 http PUT http://127.0.0.1:5000/admin/users/<int:the_id> nick="nick" e_mail="e_mail" password="password" registered="01/12/2000" photo="photoURL"
-10. DELETE user by its ID:<br />
+11. DELETE user by its ID:<br />
 http DELETE http://127.0.0.1:5000/admin/users/<int:the_id>
 
 ### Reviews

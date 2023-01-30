@@ -1119,6 +1119,32 @@ def reverse_sort_users_by_activity_route():
     return jsonify(response)
 
 
+def get_top_users(tx):
+    locate_user = """
+        MATCH (user:User)
+        OPTIONAL MATCH (user)-[conn:WROTE|COMMENTS]-(:Review)
+        WITH ID(user) AS id, user.nick AS nick, user.e_mail AS e_mail, user.photo AS photo, count(conn) AS activity
+        RETURN id, nick, e_mail, photo
+        ORDER BY activity DESC
+        LIMIT 3
+    """
+    locate_user_result = tx.run(locate_user).data()
+    return locate_user_result
+
+
+@api.route('/users/top', methods=['GET'])
+def get_top_users_route():
+    """
+    http GET http://127.0.0.1:5000/users/top
+    :return: {}
+    """
+    with driver.session() as session:
+        users = session.read_transaction(get_top_users)
+
+    response = {'users': users}
+    return jsonify(response)
+
+
 def get_user_info(tx, the_id):
     locate_user = """
         MATCH (user:User)
