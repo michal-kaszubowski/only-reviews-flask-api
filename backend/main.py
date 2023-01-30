@@ -1,8 +1,9 @@
 import os
 from os.path import join, dirname
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from neo4j import GraphDatabase
+from io import StringIO
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
@@ -2427,6 +2428,50 @@ def delete_review_comment_route(the_id):
     else:
         response = {'status': 'success'}
         return jsonify(response)
+
+
+# /admin/database/get/csv-----------------------------------------------------------------------------------------------
+
+
+def get_database_csv(tx):
+    get_database = "CALL apoc.export.csv.all(null, {stream:true}) YIELD data RETURN data"
+    get_database_result = tx.run(get_database).data()
+    return get_database_result[0]['data']
+
+
+@api.route('/admin/database/get/csv', methods=['GET'])
+def get_database_csv_route():
+    """
+    http GET http://127.0.0.1:5000/admin/database/get/csv
+    :return: file
+    """
+    with driver.session() as session:
+        string = session.read_transaction(get_database_csv)
+
+    file = StringIO(string, '\n')
+    return Response(file, mimetype='text/plain')
+
+
+# /admin/database/get/json----------------------------------------------------------------------------------------------
+
+
+def get_database_json(tx):
+    get_database = "CALL apoc.export.json.all(null, {stream:true}) YIELD data RETURN data"
+    get_database_result = tx.run(get_database).data()
+    return get_database_result[0]['data']
+
+
+@api.route('/admin/database/get/json', methods=['GET'])
+def get_database_json_route():
+    """
+    http GET http://127.0.0.1:5000/admin/database/get/json
+    :return: file
+    """
+    with driver.session() as session:
+        string = session.read_transaction(get_database_json)
+
+    file = StringIO(string, '\n')
+    return Response(file, mimetype='text/plain')
 
 
 if __name__ == '__main__':

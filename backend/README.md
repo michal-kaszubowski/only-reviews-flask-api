@@ -179,3 +179,9 @@ http DELETE http://127.0.0.1:5000/reviews/<int:the_id>
    http PUT http://127.0.0.1:5000/connection/review/comments/<int:the_id> comment="comment"
    * DELETE:<br />
    http DELETE http://127.0.0.1:5000/connection/review/comments/<int:the_id>
+
+### Export Database
+1. To CSV:<br />
+http GET http://127.0.0.1:5000/admin/database/get/csv
+2. To JSON:<br />
+http GET http://127.0.0.1:5000/admin/database/get/json
