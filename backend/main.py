@@ -225,6 +225,58 @@ def get_persons_route():
     return jsonify(response)
 
 
+def get_persons_csv(tx):
+    locate_person = """
+        WITH "MATCH (person:Person)
+            WITH person.name AS name, person.surname AS surname, person.photo AS photo, ID(person) AS id
+            RETURN name, surname, photo, id" AS query
+        CALL apoc.export.csv.query(query, null, {stream: true})
+        YIELD data
+        RETURN data
+    """
+    locate_person_result = tx.run(locate_person).data()
+    return locate_person_result[0]['data']
+
+
+@api.route('/admin/get/csv/persons', methods=['GET'])
+def get_persons_csv_route():
+    """
+    http GET http://127.0.0.1:5000/admin/get/csv/persons
+    :return: StringIO
+    """
+    with driver.session() as session:
+        string = session.read_transaction(get_persons_csv)
+
+    file = StringIO(string, '\n')
+    return Response(file, mimetype='text/plain')
+
+
+def get_persons_json(tx):
+    locate_person = """
+        WITH "MATCH (person:Person)
+            WITH person.name AS name, person.surname AS surname, person.photo AS photo, ID(person) AS id
+            RETURN name, surname, photo, id" AS query
+        CALL apoc.export.json.query(query, null, {stream: true})
+        YIELD data
+        RETURN data
+    """
+    locate_person_result = tx.run(locate_person).data()
+    return locate_person_result[0]['data']
+
+
+@api.route('/admin/get/json/persons', methods=['GET'])
+def get_persons_json_route():
+    """
+    http GET http://127.0.0.1:5000/admin/get/json/persons
+    :return: StringIO
+    """
+    with driver.session() as session:
+        string = session.read_transaction(get_persons_json)
+
+    file = StringIO(string, '\n')
+    return Response(file, mimetype='text/plain')
+
+
 def find_person_by_name(tx, name, surname):
     locate_person = """
         MATCH (person:Person {name: $name, surname: $surname})
@@ -592,6 +644,60 @@ def get_shows_route():
 
     response = {'shows': shows}
     return jsonify(response)
+
+
+def get_shows_csv(tx):
+    locate_shows = """
+        WITH "MATCH (show:Show)-[:BELONGS]-(genre:Genre)
+            OPTIONAL MATCH (show)-[like:LIKES]-(:User)
+            WITH show.title AS title, show.photo AS photo, genre.name AS genre, ID(show) AS id, count(like) AS score
+            RETURN title, photo, genre, id, score" AS query
+        CALL apoc.export.csv.query(query, null, {stream: true})
+        YIELD data
+        RETURN data
+    """
+    locate_shows_result = tx.run(locate_shows).data()
+    return locate_shows_result[0]['data']
+
+
+@api.route('/admin/get/csv/shows', methods=['GET'])
+def get_shows_csv_route():
+    """
+    http GET http://127.0.0.1:5000/admin/get/csv/shows
+    :return: StringIO
+    """
+    with driver.session() as session:
+        string = session.read_transaction(get_shows_csv)
+
+    file = StringIO(string, '\n')
+    return Response(file, mimetype='text/plain')
+
+
+def get_shows_json(tx):
+    locate_shows = """
+        WITH "MATCH (show:Show)-[:BELONGS]-(genre:Genre)
+            OPTIONAL MATCH (show)-[like:LIKES]-(:User)
+            WITH show.title AS title, show.photo AS photo, genre.name AS genre, ID(show) AS id, count(like) AS score
+            RETURN title, photo, genre, id, score" AS query
+        CALL apoc.export.json.query(query, null, {stream: true})
+        YIELD data
+        RETURN data
+    """
+    locate_shows_result = tx.run(locate_shows).data()
+    return locate_shows_result[0]['data']
+
+
+@api.route('/admin/get/json/shows', methods=['GET'])
+def get_shows_json_route():
+    """
+    http GET http://127.0.0.1:5000/admin/get/json/shows
+    :return: StringIO
+    """
+    with driver.session() as session:
+        string = session.read_transaction(get_shows_json)
+
+    file = StringIO(string, '\n')
+    return Response(file, mimetype='text/plain')
 
 
 def get_top_shows(tx):
@@ -1046,6 +1152,58 @@ def get_users_route():
     return jsonify(response)
 
 
+def get_users_csv(tx):
+    locate_users = """
+        WITH "MATCH (user:User)
+            WITH ID(user) AS id, user.nick AS nick, user.e_mail AS e_mail, user.photo AS photo 
+            RETURN id, nick, e_mail, photo" AS query
+        CALL apoc.export.csv.query(query, null, {stream: true})
+        YIELD data
+        RETURN data
+    """
+    locate_users_result = tx.run(locate_users).data()
+    return locate_users_result[0]['data']
+
+
+@api.route('/admin/get/csv/users', methods=['GET'])
+def get_users_csv_route():
+    """
+    http GET http://127.0.0.1:5000/admin/get/csv/users
+    :return: StringIO
+    """
+    with driver.session() as session:
+        string = session.read_transaction(get_users_csv)
+
+    file = StringIO(string, '\n')
+    return Response(file, mimetype='text/plain')
+
+
+def get_users_json(tx):
+    locate_users = """
+        WITH "MATCH (user:User)
+            WITH ID(user) AS id, user.nick AS nick, user.e_mail AS e_mail, user.photo AS photo 
+            RETURN id, nick, e_mail, photo" AS query
+        CALL apoc.export.json.query(query, null, {stream: true})
+        YIELD data
+        RETURN data
+    """
+    locate_users_result = tx.run(locate_users).data()
+    return locate_users_result[0]['data']
+
+
+@api.route('/admin/get/json/users', methods=['GET'])
+def get_users_json_route():
+    """
+    http GET http://127.0.0.1:5000/admin/get/json/users
+    :return: StringIO
+    """
+    with driver.session() as session:
+        string = session.read_transaction(get_users_json)
+
+    file = StringIO(string, '\n')
+    return Response(file, mimetype='text/plain')
+
+
 def find_user_by_name(tx, nick):
     locate_user = """
         MATCH (user:User {nick: $nick})
@@ -1416,6 +1574,60 @@ def get_reviews_route():
     return jsonify(response)
 
 
+def get_reviews_csv(tx):
+    locate_reviews = """
+        WITH "MATCH (show:Show)-[:ABOUT]-(review:Review)-[:WROTE]-(user:User)
+            OPTIONAL MATCH (review)-[like:LIKES]-(:User)
+            WITH show.title AS title, ID(review) AS id, user.nick AS author, count(like) AS score
+            RETURN title, id, author, score" AS query
+        CALL apoc.export.csv.query(query, null, {stream: true})
+        YIELD data
+        RETURN data
+    """
+    locate_reviews_result = tx.run(locate_reviews).data()
+    return locate_reviews_result[0]['data']
+
+
+@api.route('/admin/get/csv/reviews', methods=['GET'])
+def get_reviews_csv_route():
+    """
+    http GET http://127.0.0.1:5000/admin/get/csv/reviews
+    :return: StringIO
+    """
+    with driver.session() as session:
+        string = session.read_transaction(get_reviews_csv)
+
+    file = StringIO(string, '\n')
+    return Response(file, mimetype='text/plain')
+
+
+def get_reviews_json(tx):
+    locate_reviews = """
+        WITH "MATCH (show:Show)-[:ABOUT]-(review:Review)-[:WROTE]-(user:User)
+            OPTIONAL MATCH (review)-[like:LIKES]-(:User)
+            WITH show.title AS title, ID(review) AS id, user.nick AS author, count(like) AS score
+            RETURN title, id, author, score" AS query
+        CALL apoc.export.json.query(query, null, {stream: true})
+        YIELD data
+        RETURN data
+    """
+    locate_reviews_result = tx.run(locate_reviews).data()
+    return locate_reviews_result[0]['data']
+
+
+@api.route('/admin/get/json/reviews', methods=['GET'])
+def get_reviews_json_route():
+    """
+    http GET http://127.0.0.1:5000/admin/get/json/reviews
+    :return: StringIO
+    """
+    with driver.session() as session:
+        string = session.read_transaction(get_reviews_json)
+
+    file = StringIO(string, '\n')
+    return Response(file, mimetype='text/plain')
+
+
 def sort_reviews_by_score(tx):
     locate_review = """
         MATCH (show:Show)-[:ABOUT]-(review:Review)-[:WROTE]-(user:User)
@@ -1624,7 +1836,6 @@ def reverse_sort_reviews_by_author_route():
 
     response = {'reviews': reviews}
     return jsonify(response)
-
 
 
 def get_review_info(tx, the_id):
