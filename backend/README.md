@@ -1,4 +1,19 @@
-## API:
+# Baza danych serwisu internetowego Only Reviews
+## Układ
+Aplikacja umożliwia komunikację z grafową bazą danych Neo4j za pomocą protokołu HTTP.
+W bazie danych znajdują się obiekty (węzły) Seriali (:Show) połączone relacją [:BELONGS]
+z gatunkiem, do którego należą. Relacja ta w przeciwieństwie do innych w bazie jest
+obowiązkowa.<br />
+Użytkownicy, których dane przechowywane są w węzłach typu :User mają możliwość pisania
+recenzji obejrzanych seriali (:Review). Autor recenzji jest połączony z nią przy pomocy
+relacji [:WROTE], natomiast recenzja łączy się z serialem relacją [:ABOUT]. Dodatkowo
+wszyscy użytkownicy mogą pozostawiać swoje komentarze pod recenzjami za pomocą relacji
+[:COMMENTS] i jej właściwości comment.<br />
+Baza danych przechowywuje również informacje dotyczące obsady i reżyserów seriali w postaci
+węzłów :Person połączonych z serialami odpowiednio relacjami [:PLAYED] z właściwością role
+oraz [:DIRECTED].<br />
+
+## API
 
 ### Genres
 1. GET all genres in database:<br />

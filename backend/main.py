@@ -1612,13 +1612,10 @@ def get_review_info_route(the_id):
 
 
 def add_review(tx, nick, title, body):
-    locate_user = "MATCH (user:User {nick: $nick}) RETURN user"
-    locate_user_result = tx.run(locate_user, nick=nick).data()
+    locate_connection = "MATCH (:User {nick: $nick})-[conn:SEEN]-(:Show {title: $title}) RETURN conn"
+    locate_connection_result = tx.run(locate_connection, nick=nick, title=title).data()
 
-    locate_title = "MATCH (show:Show {title: $title}) RETURN show"
-    locate_title_result = tx.run(locate_title, title=title).data()
-
-    if locate_user_result and locate_title_result:
+    if locate_connection_result:
         create_review = """
             MATCH (user:User {nick: $nick})
             MATCH (show:Show {title: $title})
