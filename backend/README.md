@@ -1,31 +1,34 @@
 # Baza danych serwisu internetowego Only Reviews
-## Układ
+## Funkcjonalność
 Aplikacja umożliwia komunikację z grafową bazą danych Neo4j za pomocą protokołu HTTP.
-W bazie danych znajdują się obiekty (węzły) Seriali (:Show) połączone relacją [:BELONGS]
-z gatunkiem, do którego należą. Relacja ta w przeciwieństwie do innych w bazie jest
-obowiązkowa.<br />
-Użytkownicy, których dane przechowywane są w węzłach typu :User mają możliwość pisania
-recenzji obejrzanych seriali (:Review). Autor recenzji jest połączony z nią przy pomocy
-relacji [:WROTE], natomiast recenzja łączy się z serialem relacją [:ABOUT]. Dodatkowo
-wszyscy użytkownicy mogą pozostawiać swoje komentarze pod recenzjami za pomocą relacji
-[:COMMENTS] i jej właściwości comment.<br />
-Baza danych przechowywuje również informacje dotyczące obsady i reżyserów seriali w postaci
-węzłów :Person połączonych z serialami odpowiednio relacjami [:PLAYED] z właściwością role
-oraz [:DIRECTED].<br />
+W bazie danych znajdują się węzły Seriali (:Show) połączone relacją [:BELONGS]
+z gatunkami, do których należą. Relacja [:BELONGS] jest wymagana do utworzenia węzła.<br />
+Użytkownicy, których dane przechowywane są w węzłach typu :User mają możliwość pisania recenzji <b>obejrzanych</b>
+seriali (:Review). Autor każdej recenzji jest z nią połączony relacją [:WROTE], z kolei recenzja łączy się z serialem
+relacją [:ABOUT]. Dodatkowo wszyscy użytkownicy mogą pozostawiać swoje komentarze pod recenzjami za pomocą relacji
+[:COMMENTS].<br />
+Baza danych przechowywuje również informacje dotyczące obsady i reżyserów seriali w postaci węzłów typu :Person
+połączonych z serialami odpowiednio relacjami [:PLAYED] z właściwością role oraz [:DIRECTED].<br />
+Możliwe jest również pobranie całej bazy danych bądź wyników wybranych zapytań w postaci sformatowanej do standardów
+CSV i JSON.<br />
 
-## API
+## Endpointy
 
 ### Genres
 1. GET all genres in database:<br />
 http GET http://127.0.0.1:5000/genres
-2. Sort genres in alphabetic order (by name):<br />
+2. Export all genres to CSV:<br />
+http GET http://127.0.0.1:5000/admin/get/csv/genres
+3. Export genres to JSON:<br />
+http GET http://127.0.0.1:5000/admin/get/json/genres
+4. Sort genres in alphabetic order (by name):<br />
 http GET http://127.0.0.1:5000/genres/sort/by_name
-3. Sort genres by name in reverse order:<br />
+5. Sort genres by name in reverse order:<br />
 http GET http://127.0.0.1:5000/genres/sort/reverse/by_name
-4. POST new genre:<br />
+6. POST new genre:<br />
 http POST http://127.0.0.1:5000/admin/genres genre="name"
-5. There is no PUT 'cause :Genre don't have any properties.
-6. DELETE genre by its ID:<br />
+7. There is no PUT 'cause :Genre don't have any properties.
+8. DELETE genre by its ID:<br />
 http DELETE http://127.0.0.1:5000/admin/genres/<int:the_id>
 
 ### Persons
@@ -197,6 +200,6 @@ http DELETE http://127.0.0.1:5000/reviews/<int:the_id>
 
 ### Export Database
 1. To CSV:<br />
-http GET http://127.0.0.1:5000/admin/database/get/csv
+http GET http://127.0.0.1:5000/admin/get/csv/database
 2. To JSON:<br />
-http GET http://127.0.0.1:5000/admin/database/get/json
+http GET http://127.0.0.1:5000/admin/get/json/database

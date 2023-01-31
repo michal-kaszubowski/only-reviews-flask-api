@@ -43,6 +43,54 @@ def get_genres_route():
     return jsonify(response)
 
 
+def get_genres_csv(tx):
+    locate_genres = """
+        WITH "MATCH (genre:Genre) WITH genre.name AS genre, ID(genre) AS id RETURN genre, id" AS query
+        CALL apoc.export.csv.query(query, null, {stream: true})
+        YIELD data
+        RETURN data
+    """
+    locate_genres_result = tx.run(locate_genres).data()
+    return locate_genres_result[0]['data']
+
+
+@api.route('/admin/get/csv/genres', methods=['GET'])
+def get_genres_csv_route():
+    """
+    http GET http://127.0.0.1:5000/admin/get/csv/genres
+    :return: StringIO
+    """
+    with driver.session() as session:
+        string = session.read_transaction(get_genres_csv)
+
+    file = StringIO(string, '\n')
+    return Response(file, mimetype='text/plain')
+
+
+def get_genres_json(tx):
+    locate_genres = """
+        WITH "MATCH (genre:Genre) WITH genre.name AS genre, ID(genre) AS id RETURN genre, id" AS query
+        CALL apoc.export.json.query(query, null, {stream: true})
+        YIELD data
+        RETURN data
+    """
+    locate_genres_result = tx.run(locate_genres).data()
+    return locate_genres_result[0]['data']
+
+
+@api.route('/admin/get/json/genres', methods=['GET'])
+def get_genres_json_route():
+    """
+    http GET http://127.0.0.1:5000/admin/get/json/genres
+    :return: StringIO
+    """
+    with driver.session() as session:
+        string = session.read_transaction(get_genres_json)
+
+    file = StringIO(string, '\n')
+    return Response(file, mimetype='text/plain')
+
+
 def sort_genres_by_name(tx):
     locate_genre = """
         MATCH (genre:Genre)
@@ -2427,7 +2475,7 @@ def delete_review_comment_route(the_id):
         return jsonify(response)
 
 
-# /admin/database/get/csv-----------------------------------------------------------------------------------------------
+# /admin/get/csv/database-----------------------------------------------------------------------------------------------
 
 
 def get_database_csv(tx):
@@ -2436,11 +2484,11 @@ def get_database_csv(tx):
     return get_database_result[0]['data']
 
 
-@api.route('/admin/database/get/csv', methods=['GET'])
+@api.route('/admin/get/csv/database', methods=['GET'])
 def get_database_csv_route():
     """
-    http GET http://127.0.0.1:5000/admin/database/get/csv
-    :return: file
+    http GET http://127.0.0.1:5000/admin/get/csv/database
+    :return: StringIO
     """
     with driver.session() as session:
         string = session.read_transaction(get_database_csv)
@@ -2449,7 +2497,7 @@ def get_database_csv_route():
     return Response(file, mimetype='text/plain')
 
 
-# /admin/database/get/json----------------------------------------------------------------------------------------------
+# /admin/get/json/database----------------------------------------------------------------------------------------------
 
 
 def get_database_json(tx):
@@ -2458,11 +2506,11 @@ def get_database_json(tx):
     return get_database_result[0]['data']
 
 
-@api.route('/admin/database/get/json', methods=['GET'])
+@api.route('/admin/get/json/database', methods=['GET'])
 def get_database_json_route():
     """
-    http GET http://127.0.0.1:5000/admin/database/get/json
-    :return: file
+    http GET http://127.0.0.1:5000/admin/get/json/database
+    :return: StringIO
     """
     with driver.session() as session:
         string = session.read_transaction(get_database_json)
