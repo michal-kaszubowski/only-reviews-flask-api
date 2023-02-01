@@ -11,6 +11,7 @@ Baza danych przechowywuje również informacje dotyczące obsady i reżyserów s
 połączonych z serialami odpowiednio relacjami [:PLAYED] z właściwością role oraz [:DIRECTED].<br />
 Możliwe jest również pobranie całej bazy danych bądź wyników wybranych zapytań w postaci sformatowanej do standardów
 CSV i JSON.<br />
+Aplikacja pozwala również na zarekomendowanie seriali dla danych użytkowników.<br />
 
 ## Endpointy
 
@@ -70,27 +71,29 @@ http GET http://127.0.0.1:5000/admin/get/csv/shows
 http GET http://127.0.0.1:5000/admin/get/json/shows
 4. GET top 5 shows by its score:<br />
 http GET http://127.0.0.1:5000/shows/top
-5. GET show by its title:<br />
+5. Recommend shows for specified user:<br />
+http GET http://127.0.0.1:5000/shows/recommend/<int:the_id>
+6. GET show by its title:<br />
 http GET http://127.0.0.1:5000/shows/find/by_name/<string:title>
-6. Sort shows by genre:<br />
+7. Sort shows by genre:<br />
 http GET http://127.0.0.1:5000/shows/sort/by_genre
-7. Sort shows by genre in reverse order:<br />
+8. Sort shows by genre in reverse order:<br />
 http GET http://127.0.0.1:5000/shows/sort/reverse/by_genre
-8. Sort shows by name (aka. title):<br />
+9. Sort shows by name (aka. title):<br />
 http GET http://127.0.0.1:5000/shows/sort/by_name
-9. Sort shows by its title in reverse order:<br />
+10. Sort shows by its title in reverse order:<br />
 http GET http://127.0.0.1:5000/shows/sort/reverse/by_name
-10. Sort shows by score (from greatest to smallest):<br />
+11. Sort shows by score (from greatest to smallest):<br />
 http GET http://127.0.0.1:5000/shows/sort/by_score
-11. Sort shows by score in reverse order:<br />
+12. Sort shows by score in reverse order:<br />
 http GET http://127.0.0.1:5000/shows/sort/reverse/by_score
-12. GET show details by ID:<br />
+13. GET show details by ID:<br />
 http GET http://127.0.0.1:5000/shows/<int:the_id>
-13. POST new :Show:<br />
+14. POST new :Show:<br />
 http POST http://127.0.0.1:5000/admin/shows title="title" genre="genre" photo="photoURL" trailer="trailerURL" episodes=10 released="01/12/2000" ended="01/12/2001"
-14. PUT show info:<br />
+15. PUT show info:<br />
 http PUT http://127.0.0.1:5000/admin/shows/<int:the_id> title="title" genre="genre" photo="photoURL" trailer="trailerURL" episodes=10 released="01/12/2000" ended="01/12/2001"
-15. DELETE show:<br />
+16. DELETE show:<br />
 http DELETE http://127.0.0.1:5000/admin/shows/<int:the_id>
 
 ### Users
