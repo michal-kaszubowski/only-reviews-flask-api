@@ -777,6 +777,31 @@ def find_show_by_name_route(title):
     return jsonify(response)
 
 
+def find_shows_by_genre(tx, genre):
+    locate_title = """
+        MATCH (show:Show)-[:BELONGS]-(genre:Genre) WHERE genre.name = $genre
+        OPTIONAL MATCH (show)-[like:LIKES]-(:User)
+        WITH show.title AS title, show.photo AS photo, ID(show) AS id, genre.name AS genre, count(like) AS score
+        RETURN title, photo, id, genre, score
+    """
+    locate_title_result = tx.run(locate_title, genre=genre).data()
+    return locate_title_result
+
+
+@api.route('/shows/find/by_genre/<string:genre>', methods=['GET'])
+def find_shows_by_genre_route(genre):
+    """
+    http GET http://127.0.0.1:5000/shows/find/by_genre/<string:genre>
+    :param genre: string
+    :return: {}
+    """
+    with driver.session() as session:
+        shows = session.read_transaction(find_shows_by_genre, genre)
+
+    response = {'shows': shows}
+    return jsonify(response)
+
+
 def sort_shows_by_genre(tx):
     locate_title = """
         MATCH (show:Show)-[:BELONGS]-(genre:Genre)
