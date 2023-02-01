@@ -73,29 +73,31 @@ http GET http://127.0.0.1:5000/admin/get/json/shows
 http GET http://127.0.0.1:5000/shows/top
 5. Recommend shows for specified user:<br />
 http GET http://127.0.0.1:5000/shows/recommend/<int:the_id>
-6. GET show by its title:<br />
+6. Recommend by genre for specified user:<br />
+http GET http://127.0.0.1:5000/shows/recommend/by_genre/<int:the_id>&<string:genre>
+7. GET show by its title:<br />
 http GET http://127.0.0.1:5000/shows/find/by_name/<string:title>
-7. GET shows by genre:<br />
+8. GET shows by genre:<br />
 http GET http://127.0.0.1:5000/shows/find/by_genre/<string:genre>
-8. Sort shows by genre:<br />
+9. Sort shows by genre:<br />
 http GET http://127.0.0.1:5000/shows/sort/by_genre
-9. Sort shows by genre in reverse order:<br />
+10. Sort shows by genre in reverse order:<br />
 http GET http://127.0.0.1:5000/shows/sort/reverse/by_genre
-10. Sort shows by name (aka. title):<br />
+11. Sort shows by name (aka. title):<br />
 http GET http://127.0.0.1:5000/shows/sort/by_name
-11. Sort shows by its title in reverse order:<br />
+12. Sort shows by its title in reverse order:<br />
 http GET http://127.0.0.1:5000/shows/sort/reverse/by_name
-12. Sort shows by score (from greatest to smallest):<br />
+13. Sort shows by score (from greatest to smallest):<br />
 http GET http://127.0.0.1:5000/shows/sort/by_score
-13. Sort shows by score in reverse order:<br />
+14. Sort shows by score in reverse order:<br />
 http GET http://127.0.0.1:5000/shows/sort/reverse/by_score
-14. GET show details by ID:<br />
+15. GET show details by ID:<br />
 http GET http://127.0.0.1:5000/shows/<int:the_id>
-15. POST new :Show:<br />
+16. POST new :Show:<br />
 http POST http://127.0.0.1:5000/admin/shows title="title" genre="genre" photo="photoURL" trailer="trailerURL" episodes=10 released="01/12/2000" ended="01/12/2001"
-16. PUT show info:<br />
+17. PUT show info:<br />
 http PUT http://127.0.0.1:5000/admin/shows/<int:the_id> title="title" genre="genre" photo="photoURL" trailer="trailerURL" episodes=10 released="01/12/2000" ended="01/12/2001"
-17. DELETE show:<br />
+18. DELETE show:<br />
 http DELETE http://127.0.0.1:5000/admin/shows/<int:the_id>
 
 ### Users

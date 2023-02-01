@@ -752,6 +752,33 @@ def recommend_shows_route(the_id):
     return jsonify(response)
 
 
+def recommend_shows_by_genre(tx, user_id, genre):
+    locate_title = """
+        MATCH (user:User) WHERE ID(user) = $user_id
+        MATCH (show:Show)-[BELONGS]-(genre:Genre {name: $genre}) WHERE NOT (user)-[:SEEN|WANTS_TO_WATCH]-(show)
+        OPTIONAL MATCH (:User)-[like:LIKES]-(show)
+        WITH show.title AS title, show.photo AS photo, ID(show) AS id, genre.name AS genre, count(like) AS score
+        RETURN title, photo, genre, id, score
+    """
+    locate_title_result = tx.run(locate_title, user_id=user_id, genre=genre).data()
+    return locate_title_result
+
+
+@api.route('/shows/recommend/by_genre/<int:the_id>&<string:genre>', methods=['GET'])
+def recommend_shows_by_genre_route(the_id, genre):
+    """
+    http GET http://127.0.0.1:5000/shows/recommend/by_genre/<int:the_id>&<string:genre>
+    :param the_id: int
+    :param genre: string
+    :return: {}
+    """
+    with driver.session() as session:
+        shows = session.read_transaction(recommend_shows_by_genre, the_id, genre)
+
+    response = {'recommended': shows}
+    return jsonify(response)
+
+
 def find_show_by_name(tx, title):
     locate_title = """
         MATCH (show:Show {title: $title})-[:BELONGS]-(genre:Genre)
