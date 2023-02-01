@@ -135,29 +135,31 @@ http GET http://127.0.0.1:5000/reviews
 http GET http://127.0.0.1:5000/admin/get/csv/reviews
 3. Export all to JSON:<br />
 http GET http://127.0.0.1:5000/admin/get/json/reviews
-4. Sort reviews by likes:<br />
+4. Recommend reviews for user:<br />
+http GET http://127.0.0.1:5000/reviews/recommend/<int:the_id>
+5. Sort reviews by likes:<br />
 http GET http://127.0.0.1:5000/reviews/sort/by_score
-5. Sort reviews by likes in reverse order:<br />
+6. Sort reviews by likes in reverse order:<br />
 http GET http://127.0.0.1:5000/reviews/sort/reverse/by_score
-6. Sort reviews by amount of comments:<br />
+7. Sort reviews by amount of comments:<br />
 http GET http://127.0.0.1:5000/reviews/sort/by_comments
-7. Sort reviews by comments in reverse order:<br />
+8. Sort reviews by comments in reverse order:<br />
 http GET http://127.0.0.1:5000/reviews/sort/reverse/by_comments
-8. Sort reviews by title:<br />
+9. Sort reviews by title:<br />
 http GET http://127.0.0.1:5000/reviews/sort/by_title
-9. Sort reviews by title in reverse:<br />
+10. Sort reviews by title in reverse:<br />
 http GET http://127.0.0.1:5000/reviews/sort/reverse/by_title
-10. Sort reviews by its author:<br />
+11. Sort reviews by its author:<br />
 http GET http://127.0.0.1:5000/reviews/sort/by_author
-11. Sort reviews by author in reverse:<br />
+12. Sort reviews by author in reverse:<br />
 http GET http://127.0.0.1:5000/reviews/sort/reverse/by_author
-12. GET review info:<br />
+13. GET review info:<br />
 http GET http://127.0.0.1:5000/reviews/<int:the_id>
-13. POST review:<br />
+14. POST review:<br />
 http POST http://127.0.0.1:5000/reviews user="nick" title="title" body="body"
-14. PUT review's body:<br />
+15. PUT review's body:<br />
 http PUT http://127.0.0.1:5000/reviews/<int:the_id> body="body"
-15. DELETE review:<br />
+16. DELETE review:<br />
 http DELETE http://127.0.0.1:5000/reviews/<int:the_id>
 
 ### Show Connections

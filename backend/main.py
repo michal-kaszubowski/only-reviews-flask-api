@@ -1706,6 +1706,33 @@ def get_reviews_json_route():
     return Response(file, mimetype='text/plain')
 
 
+def recommend_reviews(tx, user_id):
+    locate_review = """
+        MATCH (user:User) WHERE ID(user) = $user_id
+        MATCH (show:Show)-[:ABOUT]-(review:Review)-[:WROTE]-(author:User)
+        WHERE NOT (user)-[:LIKES|COMMENTS|WROTE]-(review)               
+        OPTIONAL MATCH (:User)-[like:LIKES]-(review)
+        WITH show.title AS title, ID(review) AS id, author.nick AS author, count(like) AS score
+        RETURN title, id, author, score
+    """
+    locate_review_result = tx.run(locate_review, user_id=user_id).data()
+    return locate_review_result
+
+
+@api.route('/reviews/recommend/<int:the_id>', methods=['GET'])
+def recommend_reviews_route(the_id):
+    """
+    http GET http://127.0.0.1:5000/reviews/recommend/<int:the_id>
+    :param the_id: int
+    :return: {}
+    """
+    with driver.session() as session:
+        reviews = session.read_transaction(recommend_reviews, the_id)
+
+    response = {'recommended': reviews}
+    return jsonify(response)
+
+
 def sort_reviews_by_score(tx):
     locate_review = """
         MATCH (show:Show)-[:ABOUT]-(review:Review)-[:WROTE]-(user:User)
